@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/alarm_provider.dart';
 import 'alarm_ring_screen.dart';
@@ -60,6 +61,16 @@ class _HomeScreenState extends State<HomeScreen> {
     // 2. Request Exact Alarm Permission (Required for Android 12+)
     if (await Permission.scheduleExactAlarm.isDenied) {
       await Permission.scheduleExactAlarm.request();
+    }
+
+    // 3. Battery optimization can delay or kill alarms on many phones.
+    // Ask once only, so we don't nag on every launch.
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool('asked_battery_opt') ?? false)) {
+      await prefs.setBool('asked_battery_opt', true);
+      if (!await Permission.ignoreBatteryOptimizations.isGranted) {
+        await Permission.ignoreBatteryOptimizations.request();
+      }
     }
   }
 

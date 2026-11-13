@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
@@ -79,7 +82,7 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     final hours = diff.inHours;
     final minutes = diff.inMinutes % 60;
     if (hours == 0 && minutes == 0) return "Next alarm in less than a minute";
-    return "Next alarm in ${hours > 0 ? '$hours hours ' : ''}${minutes} minutes";
+    return "Next alarm in ${hours > 0 ? '$hours hours ' : ''}$minutes minutes";
   }
 
   void _saveAlarm() {
@@ -172,10 +175,29 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                     type: FileType.audio,
                   );
                   if (result != null && result.files.single.path != null) {
-                    setState(() {
-                      _audioPath = result.files.single.path!;
-                      _audioName = result.files.single.name;
-                    });
+                    // file_picker hands back a temporary cache copy the OS may
+                    // delete. Keep our own copy so the alarm never goes silent.
+                    try {
+                      final docs = await getApplicationDocumentsDirectory();
+                      final dir = Directory('${docs.path}/ringtones');
+                      await dir.create(recursive: true);
+                      final name = result.files.single.name;
+                      final dest =
+                          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}_$name';
+                      await File(result.files.single.path!).copy(dest);
+                      if (!mounted) return;
+                      setState(() {
+                        _audioPath = dest;
+                        _audioName = name;
+                      });
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not save that audio file.'),
+                        ),
+                      );
+                    }
                   }
                 },
               ),

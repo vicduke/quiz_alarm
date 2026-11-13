@@ -203,7 +203,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                             context,
                             listen: false,
                           ).snoozeAlarm(widget.alarm);
-                          if (mounted) Navigator.pop(context, 'snooze');
+                          if (context.mounted) Navigator.pop(context, 'snooze');
                         },
                         icon: const Icon(Icons.snooze),
                         label: const Text('Mercy Snooze (5 Minutes)'),

@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/alarm_provider.dart';
+import '../../widgets/clock_display.dart';
 import '../edit_alarm_screen.dart';
 import '../alarm_ring_screen.dart';
 
@@ -20,13 +20,7 @@ class AlarmTab extends StatelessWidget {
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Text(
-                    DateFormat('hh:mm:ss a').format(provider.now),
-                    style: const TextStyle(
-                      fontSize: 46,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
+                  const ClockDisplay(),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.play_arrow),
