@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BrainWake mini emulator</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; background: #17171c; color: #d8d8e0;
+      font: 14px/1.5 system-ui, sans-serif;
+      display: flex; flex-wrap: wrap; gap: 32px;
+      align-items: flex-start; justify-content: center; padding: 24px 16px;
+      box-sizing: border-box;
+    }
+    .phone {
+      width: 412px; height: 892px; max-width: 100%;
+      border: 12px solid #000; border-radius: 44px; overflow: hidden;
+      box-shadow: 0 0 0 2px #3a3a44, 0 24px 60px rgba(0, 0, 0, .6);
+      background: #000; flex: none; box-sizing: content-box;
+    }
+    .phone iframe { width: 100%; height: 100%; border: 0; display: block; }
+    aside { max-width: 320px; }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    button {
+      font: inherit; padding: 8px 14px; margin: 4px 4px 4px 0; cursor: pointer;
+      border-radius: 8px; border: 1px solid #55556a; background: #26262f; color: inherit;
+    }
+    li { margin-bottom: 6px; }
+    code { background: #26262f; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="phone"><iframe id="app" src="index.html" title="BrainWake"></iframe></div>
+  <aside>
+    <h1>BrainWake mini emulator</h1>
+    <p>The real app code, running in the browser with a simulated alarm
+      engine. Data is kept in this browser.</p>
+    <button onclick="document.getElementById('app').contentWindow.location.reload()">Restart app</button>
+    <button onclick="wipe()">Wipe app data</button>
+    <ul>
+      <li>Add an alarm, then tap its <b>bell</b> icon to make it ring in 3 seconds.</li>
+      <li>"Restart app" while it rings or is snoozed checks that the alarm survives.</li>
+      <li>Question Banks and Free Revision use the real SQLite database (in the browser).</li>
+      <li>AI features need your Gemini key in Settings, same as on the phone.</li>
+      <li>Not simulated: lock screen, notifications, vibration, battery limits.
+        Those still need a real phone.</li>
+    </ul>
+  </aside>
+  <script>
+    async function wipe() {
+      if (!confirm('Delete all alarms, progress and settings in the emulator?')) return;
+      localStorage.clear();
+      if (indexedDB.databases) {
+        for (const db of await indexedDB.databases()) indexedDB.deleteDatabase(db.name);
+      }
+      if (navigator.storage && navigator.storage.getDirectory) {
+        try {
+          const root = await navigator.storage.getDirectory();
+          for await (const name of root.keys()) await root.removeEntry(name, { recursive: true });
+        } catch (e) {}
+      }
+      document.getElementById('app').contentWindow.location.reload();
+    }
+  </script>
+</body>
+</html>

@@ -1,51 +1,146 @@
-import 'package:material_ui/material_ui.dart';
+/// Data classes shared across the app: study units, topics, questions
+/// and alarms.
+library;
 
+import 'dart:convert';
 import 'dart:math';
+
+import 'package:material_ui/material_ui.dart';
 
 enum QuestionType { mcq, saq }
 
+/// A course unit, e.g. "Pharmacology". Holds several [Topic]s.
+class StudyUnit {
+  final String id;
+  final String name;
+  final String description;
+
+  const StudyUnit({
+    required this.id,
+    required this.name,
+    this.description = '',
+  });
+}
+
+/// A subtopic inside a unit, e.g. "Antimicrobials".
+class Topic {
+  final String id;
+  final String unitId;
+  final String name;
+  final bool isCustom;
+
+  const Topic({
+    required this.id,
+    required this.unitId,
+    required this.name,
+    this.isCustom = false,
+  });
+}
+
+/// How the user is doing on one topic.
+class TopicStats {
+  /// Questions stored for the topic.
+  final int total;
+
+  /// Questions answered at least once.
+  final int seen;
+
+  /// Questions whose most recent answer was correct.
+  final int mastered;
+
+  const TopicStats({this.total = 0, this.seen = 0, this.mastered = 0});
+
+  int get unseen => total - seen;
+}
+
 class Question {
   final String id;
+
+  /// Id of the [Topic] this question belongs to.
+  final String topicId;
+
+  /// Topic name, kept on the question so screens can show it directly.
   final String topic;
   final QuestionType type;
   final String questionText;
   final List<String> options;
   final String correctAnswer;
 
-  Question({
+  /// Other spellings / names that also count as correct for typed answers
+  /// (e.g. "Epinephrine" for "Adrenaline").
+  final List<String> altAnswers;
+
+  /// Why the answer is right. Stored so explanations work offline.
+  final String explanation;
+
+  /// Where the question came from: 'seed', 'ai' or 'user'.
+  final String source;
+
+  const Question({
     required this.id,
+    this.topicId = '',
     required this.topic,
     required this.type,
     required this.questionText,
     this.options = const [],
     required this.correctAnswer,
+    this.altAnswers = const [],
+    this.explanation = '',
+    this.source = 'seed',
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'topic': topic,
-    'type': type == QuestionType.mcq ? 'mcq' : 'saq',
-    'questionText': questionText,
-    'options': options,
-    'correctAnswer': correctAnswer,
-  };
+  /// The same question with its options in a new random order, so the
+  /// right answer is not always in the same place.
+  Question shuffled([Random? rng]) =>
+      copyWith(options: List<String>.of(options)..shuffle(rng ?? Random()));
 
-  factory Question.fromJson(Map<String, dynamic> json) => Question(
-    id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    topic: json['topic'] ?? 'General',
-    type: json['type'] == 'mcq' ? QuestionType.mcq : QuestionType.saq,
-    questionText: json['questionText'],
-    options: List<String>.from(json['options'] ?? []),
-    correctAnswer: json['correctAnswer'],
+  Question copyWith({String? explanation, List<String>? options}) => Question(
+    id: id,
+    topicId: topicId,
+    topic: topic,
+    type: type,
+    questionText: questionText,
+    options: options ?? this.options,
+    correctAnswer: correctAnswer,
+    altAnswers: altAnswers,
+    explanation: explanation ?? this.explanation,
+    source: source,
   );
+
+  /// Reads a row of the `questions` table joined with its topic name.
+  factory Question.fromRow(Map<String, Object?> row) {
+    List<String> list(Object? raw) {
+      try {
+        return List<String>.from(jsonDecode(raw as String) as List);
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    return Question(
+      id: row['id'] as String,
+      topicId: row['topic_id'] as String,
+      topic: (row['topic_name'] ?? '') as String,
+      type: row['type'] == 'mcq' ? QuestionType.mcq : QuestionType.saq,
+      questionText: row['text'] as String,
+      options: list(row['options']),
+      correctAnswer: row['answer'] as String,
+      altAnswers: list(row['alt_answers']),
+      explanation: (row['explanation'] ?? '') as String,
+      source: (row['source'] ?? 'seed') as String,
+    );
+  }
 }
 
 class AlarmItem {
   final int id; // 32-bit integer required by native Android AlarmManager
   TimeOfDay time;
+
+  /// Topic or unit ids to draw questions from. Empty means "any topic".
+  /// (Alarms saved by older versions hold topic names; those still resolve.)
   List<String> topics;
   bool isEnabled;
-  List<int> activeDays; // 1 = Mon, 7 = Sun
+  List<int> activeDays; // 1 = Mon, 7 = Sun. Empty = ring once.
   String label;
   String audioPath; // Asset path or local storage file path
   bool vibrate;
@@ -65,32 +160,14 @@ class AlarmItem {
     this.volume = 1.0,
   });
 
-  static int generateSafeId() => Random().nextInt(900000) + 100000;
-
-  AlarmItem copyWith({
-    int? id,
-    TimeOfDay? time,
-    List<String>? topics,
-    bool? isEnabled,
-    List<int>? activeDays,
-    String? label,
-    String? audioPath,
-    bool? vibrate,
-    double? fadeDuration,
-    double? volume,
-  }) {
-    return AlarmItem(
-      id: id ?? this.id,
-      time: time ?? this.time,
-      topics: topics ?? this.topics,
-      isEnabled: isEnabled ?? this.isEnabled,
-      activeDays: activeDays ?? this.activeDays,
-      label: label ?? this.label,
-      audioPath: audioPath ?? this.audioPath,
-      vibrate: vibrate ?? this.vibrate,
-      fadeDuration: fadeDuration ?? this.fadeDuration,
-      volume: volume ?? this.volume,
-    );
+  /// A random id that is not in [taken].
+  static int generateSafeId([Iterable<int> taken = const []]) {
+    final used = taken.toSet();
+    final rng = Random();
+    while (true) {
+      final id = rng.nextInt(900000) + 100000;
+      if (!used.contains(id)) return id;
+    }
   }
 
   Map<String, dynamic> toJson() => {

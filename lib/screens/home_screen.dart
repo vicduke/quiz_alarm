@@ -1,3 +1,7 @@
+/// The three tabs, plus the hook that opens the ring screen when an alarm
+/// goes off.
+library;
+
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -28,18 +32,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // Request permissions on startup
-    _requestPermissions();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<AlarmProvider>(context, listen: false);
-      provider.onAlarmTriggered = (alarm) async {
-        if (!mounted) return; // Safety check added
+      // The simulator has no OS permissions to ask for.
+      if (!provider.backend.isSimulated) _requestPermissions();
 
+      provider.onAlarmTriggered = (alarm) async {
+        if (!mounted) {
+          provider.ringScreenClosed();
+          return;
+        }
         final result = await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => AlarmRingScreen(alarm: alarm)),
         );
-        provider.isAlarmRinging = false;
         if (result == 'snooze' && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -48,29 +53,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         }
+        provider.ringScreenClosed();
       };
     });
   }
 
   Future<void> _requestPermissions() async {
-    // 1. Request Notification Permission (Required for Android 13+)
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
-    }
-
-    // 2. Request Exact Alarm Permission (Required for Android 12+)
-    if (await Permission.scheduleExactAlarm.isDenied) {
-      await Permission.scheduleExactAlarm.request();
-    }
-
-    // 3. Battery optimization can delay or kill alarms on many phones.
-    // Ask once only, so we don't nag on every launch.
-    final prefs = await SharedPreferences.getInstance();
-    if (!(prefs.getBool('asked_battery_opt') ?? false)) {
-      await prefs.setBool('asked_battery_opt', true);
-      if (!await Permission.ignoreBatteryOptimizations.isGranted) {
-        await Permission.ignoreBatteryOptimizations.request();
+    try {
+      // 1. Request Notification Permission (Required for Android 13+)
+      if (await Permission.notification.isDenied) {
+        await Permission.notification.request();
       }
+
+      // 2. Request Exact Alarm Permission (Required for Android 12+)
+      if (await Permission.scheduleExactAlarm.isDenied) {
+        await Permission.scheduleExactAlarm.request();
+      }
+
+      // 3. Battery optimization can delay or kill alarms on many phones.
+      // Ask once only, so we don't nag on every launch.
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool('asked_battery_opt') ?? false)) {
+        await prefs.setBool('asked_battery_opt', true);
+        if (!await Permission.ignoreBatteryOptimizations.isGranted) {
+          await Permission.ignoreBatteryOptimizations.request();
+        }
+      }
+    } catch (e) {
+      debugPrint('Permission request failed: $e');
     }
   }
 
@@ -84,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.push(
               context,

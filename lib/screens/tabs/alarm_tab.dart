@@ -1,7 +1,12 @@
+/// Alarms tab: clock, the list of alarms and the "Add alarm" button.
+library;
+
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/models.dart';
 import '../../services/alarm_provider.dart';
+import '../../services/bank_provider.dart';
 import '../../widgets/clock_display.dart';
 import '../edit_alarm_screen.dart';
 import '../alarm_ring_screen.dart';
@@ -9,14 +14,25 @@ import '../alarm_ring_screen.dart';
 class AlarmTab extends StatelessWidget {
   const AlarmTab({super.key});
 
+  String _days(AlarmItem a) {
+    if (a.activeDays.isEmpty) return 'Once';
+    if (a.activeDays.length == 7) return 'Every day';
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final sorted = [...a.activeDays]..sort();
+    return sorted.map((d) => names[d - 1]).join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bank = context.watch<BankProvider>();
+    final scheme = Theme.of(context).colorScheme;
+
     return Consumer<AlarmProvider>(
       builder: (context, provider, child) {
         return Column(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 28),
+              padding: const EdgeInsets.symmetric(vertical: 20),
               alignment: Alignment.center,
               child: Column(
                 children: [
@@ -26,35 +42,47 @@ class AlarmTab extends StatelessWidget {
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Test Alarm Screen'),
                     onPressed: () {
-                      if (provider.alarms.isNotEmpty) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AlarmRingScreen(alarm: provider.alarms.first),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please add an alarm to test!'),
-                          ),
-                        );
-                      }
+                      // A preview: it can be closed and does not touch
+                      // any real alarm.
+                      final sample = provider.alarms.isNotEmpty
+                          ? provider.alarms.first
+                          : AlarmItem(
+                              id: 1,
+                              time: TimeOfDay.now(),
+                              topics: const [],
+                            );
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AlarmRingScreen(alarm: sample, preview: true),
+                        ),
+                      );
                     },
                   ),
+                  if (provider.backend.isSimulated)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Simulator: alarms ring inside the app. '
+                        'Tap the bell on an alarm to ring it in 3 s.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                 ],
               ),
             ),
-            const Divider(),
+            const Divider(height: 1),
             Expanded(
               child: provider.alarms.isEmpty
                   ? const Center(child: Text('No alarms set.'))
                   : ListView.builder(
+                      padding: const EdgeInsets.only(top: 6),
                       itemCount: provider.alarms.length,
                       itemBuilder: (ctx, i) {
                         final a = provider.alarms[i];
+                        final faded = scheme.onSurface.withValues(alpha: 0.45);
                         return Card(
-                          color: const Color(0xFF1C1C1E),
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 6,
@@ -62,8 +90,8 @@ class AlarmTab extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -75,38 +103,66 @@ class AlarmTab extends StatelessWidget {
                               );
                             },
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        a.time.format(context),
-                                        style: TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
-                                          color: a.isEnabled
-                                              ? Colors.white
-                                              : Colors.grey,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          a.time.format(context),
+                                          style: TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                            color: a.isEnabled
+                                                ? scheme.onSurface
+                                                : faded,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${a.label} • ${a.topics.join(", ")}',
-                                        style: TextStyle(
-                                          color: a.isEnabled
-                                              ? Colors.grey.shade400
-                                              : Colors.grey.shade600,
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${a.label} - ${_days(a)}',
+                                          style: TextStyle(
+                                            color: a.isEnabled
+                                                ? scheme.onSurfaceVariant
+                                                : faded,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          bank.describe(a.topics),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: a.isEnabled
+                                                ? scheme.secondary
+                                                : faded,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                  if (provider.backend.isSimulated)
+                                    IconButton(
+                                      tooltip: 'Ring in 3 seconds',
+                                      icon: const Icon(
+                                        Icons.notifications_active_outlined,
+                                      ),
+                                      onPressed: () {
+                                        provider.ringSoon(a);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            duration: Duration(seconds: 2),
+                                            content: Text('Ringing in 3 s...'),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   Switch(
-                                    activeThumbColor: Colors.blueAccent,
                                     value: a.isEnabled,
                                     onChanged: (v) {
                                       a.isEnabled = v;
@@ -123,22 +179,19 @@ class AlarmTab extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => const EditAlarmScreen(),
-                      fullscreenDialog:
-                          true, // Slides up from bottom like native iOS/Android
+                      fullscreenDialog: true,
                     ),
                   );
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Add Alarm'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

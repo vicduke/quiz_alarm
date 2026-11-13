@@ -1,13 +1,19 @@
+/// Add / edit one alarm: time, repeat days, name, topics, ringtone, fade.
+library;
+
 import 'dart:io';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../services/alarm_provider.dart';
+import '../services/bank_provider.dart';
+import '../widgets/topic_picker.dart';
 
 class EditAlarmScreen extends StatefulWidget {
   final AlarmItem? existingAlarm;
@@ -19,9 +25,17 @@ class EditAlarmScreen extends StatefulWidget {
 }
 
 class _EditAlarmScreenState extends State<EditAlarmScreen> {
+  // Preset ringtones (bundled in assets/sounds).
+  static const List<Map<String, String>> _defaultRingtones = [
+    {'name': 'Default Alarm', 'path': 'assets/sounds/alarm.mp3'},
+    {'name': 'Correct Chime', 'path': 'assets/sounds/correct.mp3'},
+    {'name': 'Wrong Buzzer', 'path': 'assets/sounds/wrong.mp3'},
+  ];
+  static const List<double> _fadeOptions = [0.0, 5.0, 10.0, 30.0, 60.0];
+
   late TimeOfDay _selectedTime;
-  late String _label;
-  late String _topics;
+  late final TextEditingController _labelCtrl;
+  late List<String> _topics; // topic/unit ids; empty = all topics
   late String _audioPath;
   late String _audioName;
   late bool _vibrate;
@@ -30,83 +44,63 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   int _repeatMode = 0; // 0 = Ring once, 1 = Custom
   List<int> _customDays = []; // 1=Mon, 7=Sun
 
-  // Preset ringtones (Make sure these files exist in your assets folder!)
-  final List<Map<String, String>> _defaultRingtones = [
-    {'name': 'Default Alarm', 'path': 'assets/sounds/alarm.mp3'},
-    {'name': 'Correct Chime', 'path': 'assets/sounds/correct.mp3'},
-    {'name': 'Wrong Buzzer', 'path': 'assets/sounds/wrong.mp3'},
-  ];
-
-  final List<double> _fadeOptions = [0.0, 5.0, 10.0, 30.0, 60.0];
-
   @override
   void initState() {
     super.initState();
     final a = widget.existingAlarm;
     _selectedTime = a != null ? a.time : TimeOfDay.now();
-    _label = a?.label ?? 'Quiz Alarm';
-    _topics = a?.topics.join(', ') ?? 'Pharmacology';
+    _labelCtrl = TextEditingController(text: a?.label ?? 'Quiz Alarm');
+    _topics = List.of(a?.topics ?? const []);
     _audioPath = a?.audioPath ?? 'assets/sounds/alarm.mp3';
-    _audioName = a?.audioPath.split('/').last ?? 'Default Alarm';
+    _audioName = _nameOf(_audioPath);
     _vibrate = a?.vibrate ?? true;
     _fadeDuration = a?.fadeDuration ?? 5.0;
 
-    if (a != null) {
-      if (a.activeDays.isEmpty) {
-        _repeatMode = 0; // Ring once
-      } else {
-        _repeatMode = 1; // Custom
-        _customDays = List.from(a.activeDays);
-      }
-    } else {
-      _repeatMode = 0; // Default to Ring once for new alarms
-      _customDays = [];
+    if (a != null && a.activeDays.isNotEmpty) {
+      _repeatMode = 1;
+      _customDays = List.from(a.activeDays);
     }
   }
+
+  @override
+  void dispose() {
+    _labelCtrl.dispose();
+    super.dispose();
+  }
+
+  String _nameOf(String path) {
+    for (final tone in _defaultRingtones) {
+      if (tone['path'] == path) return tone['name']!;
+    }
+    // Saved custom files are named "<timestamp>_<original name>".
+    return path.split('/').last.replaceFirst(RegExp(r'^\d+_'), '');
+  }
+
+  List<int> get _activeDays => _repeatMode == 1 ? _customDays : const [];
 
   String _getTimeUntil() {
     final now = DateTime.now();
-    DateTime next = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
-    );
-
-    if (!next.isAfter(now)) {
-      next = next.add(const Duration(days: 1));
-    }
-
-    final diff = next.difference(now);
-    final hours = diff.inHours;
-    final minutes = diff.inMinutes % 60;
-    if (hours == 0 && minutes == 0) return "Next alarm in less than a minute";
-    return "Next alarm in ${hours > 0 ? '$hours hours ' : ''}$minutes minutes";
+    final next = calculateNextTrigger(_selectedTime, _activeDays, now);
+    return 'Next alarm ${describeTimeUntil(next, now)}';
   }
 
   void _saveAlarm() {
-    List<int> activeDays = [];
-    if (_repeatMode == 1) activeDays = _customDays;
-
-    final topicList = _topics
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
+    final provider = Provider.of<AlarmProvider>(context, listen: false);
+    final label = _labelCtrl.text.trim();
     final newAlarm = AlarmItem(
-      id: widget.existingAlarm?.id ?? AlarmItem.generateSafeId(),
+      id:
+          widget.existingAlarm?.id ??
+          AlarmItem.generateSafeId(provider.alarms.map((a) => a.id)),
       time: _selectedTime,
-      topics: topicList.isEmpty ? ['Pharmacology'] : topicList,
-      label: _label.trim().isEmpty ? 'Quiz Alarm' : _label.trim(),
+      topics: _topics,
+      label: label.isEmpty ? 'Quiz Alarm' : label,
       audioPath: _audioPath,
       vibrate: _vibrate,
-      activeDays: activeDays,
+      activeDays: List.of(_activeDays),
       fadeDuration: _fadeDuration,
+      volume: widget.existingAlarm?.volume ?? 1.0,
     );
 
-    final provider = Provider.of<AlarmProvider>(context, listen: false);
     if (widget.existingAlarm == null) {
       provider.addAlarm(newAlarm);
     } else {
@@ -115,92 +109,85 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     Navigator.pop(context);
   }
 
+  Future<void> _pickTopics() async {
+    final bank = context.read<BankProvider>();
+    final picked = await showTopicPickerSheet(
+      context,
+      initial: bank.selectedIds(_topics),
+      title: 'Topics for this alarm',
+    );
+    if (picked == null || !mounted) return;
+    // Every topic ticked is the same as "all topics", which also covers
+    // topics added later.
+    final all = picked.length == bank.topics.length;
+    setState(() => _topics = all ? [] : picked.toList());
+  }
+
+  Future<void> _pickAudioFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    if (result == null || result.files.single.path == null) return;
+    // file_picker hands back a temporary cache copy the OS may delete.
+    // Keep our own copy so the alarm never goes silent.
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      final dir = Directory('${docs.path}/ringtones');
+      await dir.create(recursive: true);
+      final name = result.files.single.name;
+      final dest = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}_$name';
+      await File(result.files.single.path!).copy(dest);
+      if (!mounted) return;
+      setState(() {
+        _audioPath = dest;
+        _audioName = name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save that audio file.')),
+      );
+    }
+  }
+
   void _showRingtonePicker() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF262628),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
+      showDragHandle: true,
+      builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Select Ringtone',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              Text(
+                'Select Ringtone',
+                style: Theme.of(sheetContext).textTheme.titleLarge,
               ),
-              ..._defaultRingtones.map(
-                (tone) => ListTile(
-                  title: Text(
-                    tone['name']!,
-                    style: const TextStyle(color: Colors.white),
-                  ),
+              const SizedBox(height: 8),
+              for (final tone in _defaultRingtones)
+                ListTile(
+                  title: Text(tone['name']!),
                   trailing: _audioPath == tone['path']
-                      ? const Icon(Icons.check, color: Colors.blueAccent)
+                      ? const Icon(Icons.check)
                       : null,
                   onTap: () {
                     setState(() {
                       _audioPath = tone['path']!;
                       _audioName = tone['name']!;
                     });
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                   },
                 ),
-              ),
-              const Divider(color: Colors.white12),
-              ListTile(
-                leading: const Icon(
-                  Icons.folder_open,
-                  color: Colors.blueAccent,
+              // Copying a picked file needs real file storage.
+              if (!kIsWeb) ...[
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.folder_open),
+                  title: const Text('Pick from device...'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _pickAudioFile();
+                  },
                 ),
-                title: const Text(
-                  'Pick from device...',
-                  style: TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final result = await FilePicker.platform.pickFiles(
-                    type: FileType.audio,
-                  );
-                  if (result != null && result.files.single.path != null) {
-                    // file_picker hands back a temporary cache copy the OS may
-                    // delete. Keep our own copy so the alarm never goes silent.
-                    try {
-                      final docs = await getApplicationDocumentsDirectory();
-                      final dir = Directory('${docs.path}/ringtones');
-                      await dir.create(recursive: true);
-                      final name = result.files.single.name;
-                      final dest =
-                          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}_$name';
-                      await File(result.files.single.path!).copy(dest);
-                      if (!mounted) return;
-                      setState(() {
-                        _audioPath = dest;
-                        _audioName = name;
-                      });
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Could not save that audio file.'),
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
+              ],
             ],
           ),
         );
@@ -209,43 +196,32 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   }
 
   void _showFadePicker() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF262628),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
+      showDragHandle: true,
+      builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Fade-in Duration',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              Text(
+                'Fade-in Duration',
+                style: Theme.of(sheetContext).textTheme.titleLarge,
               ),
-              ..._fadeOptions.map(
-                (duration) => ListTile(
+              const SizedBox(height: 8),
+              for (final duration in _fadeOptions)
+                ListTile(
                   title: Text(
                     duration == 0 ? 'None' : '${duration.toInt()} seconds',
-                    style: const TextStyle(color: Colors.white),
                   ),
                   trailing: _fadeDuration == duration
-                      ? const Icon(Icons.check, color: Colors.blueAccent)
+                      ? const Icon(Icons.check)
                       : null,
                   onTap: () {
                     setState(() => _fadeDuration = duration);
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                   },
                 ),
-              ),
             ],
           ),
         );
@@ -255,21 +231,19 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkCardColor = const Color(0xFF262628);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final cardColor = scheme.surfaceContainerHighest;
+    final bank = context.watch<BankProvider>();
+    final muted = TextStyle(color: scheme.onSurfaceVariant);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: Colors.blueAccent, fontSize: 16),
-          ),
+          child: const Text('Cancel', style: TextStyle(fontSize: 16)),
         ),
-        leadingWidth: 80,
+        leadingWidth: 88,
         title: Text(
           widget.existingAlarm == null ? 'Add alarm' : 'Edit alarm',
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -280,11 +254,7 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
             onPressed: _saveAlarm,
             child: const Text(
               'Done',
-              style: TextStyle(
-                color: Colors.blueAccent,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -292,27 +262,22 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          Center(
-            child: Text(
-              _getTimeUntil(),
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          ),
+          Center(child: Text(_getTimeUntil(), style: muted)),
           const SizedBox(height: 16),
 
           // Time Picker (Cupertino Style)
           Container(
-            height: 220,
+            height: 200,
             decoration: BoxDecoration(
-              color: darkCardColor,
+              color: cardColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: CupertinoTheme(
-              data: const CupertinoThemeData(
-                brightness: Brightness.dark,
+              data: CupertinoThemeData(
+                brightness: theme.brightness,
                 textTheme: CupertinoTextThemeData(
                   dateTimePickerTextStyle: TextStyle(
-                    color: Colors.white,
+                    color: scheme.onSurface,
                     fontSize: 24,
                   ),
                 ),
@@ -331,114 +296,123 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Repeat Mode Toggles (Ring once & Custom only)
-          Row(
-            children: [
-              _buildSegment('Ring once', 0),
-              _buildSegment('Custom', 1),
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(value: 0, label: Text('Ring once')),
+              ButtonSegment(value: 1, label: Text('Repeat')),
             ],
+            selected: {_repeatMode},
+            onSelectionChanged: (s) => setState(() => _repeatMode = s.first),
           ),
           const SizedBox(height: 16),
 
-          // Custom Days Selector
-          if (_repeatMode == 1)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+          if (_repeatMode == 1) ...[
+            Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: darkCardColor,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Repeat',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
                   Text(
                     _getCustomDaysText(),
-                    style: const TextStyle(
-                      color: Colors.blueAccent,
-                      fontSize: 14,
+                    style: TextStyle(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildDayBubble('S', 7),
-                      _buildDayBubble('M', 1),
-                      _buildDayBubble('T', 2),
-                      _buildDayBubble('W', 3),
-                      _buildDayBubble('T', 4),
-                      _buildDayBubble('F', 5),
-                      _buildDayBubble('S', 6),
+                      _buildDayBubble('S', 7, scheme),
+                      _buildDayBubble('M', 1, scheme),
+                      _buildDayBubble('T', 2, scheme),
+                      _buildDayBubble('W', 3, scheme),
+                      _buildDayBubble('T', 4, scheme),
+                      _buildDayBubble('F', 5, scheme),
+                      _buildDayBubble('S', 6, scheme),
                     ],
                   ),
                 ],
               ),
             ),
-
-          if (_repeatMode == 1) const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
           // Settings List
           Container(
             decoration: BoxDecoration(
-              color: darkCardColor,
+              color: cardColor,
               borderRadius: BorderRadius.circular(20),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                _buildTextFieldTile('Alarm name', _label, (v) => _label = v),
-                const Divider(height: 1, indent: 16, color: Colors.white12),
-                _buildTextFieldTile('Topics', _topics, (v) => _topics = v),
-                const Divider(height: 1, indent: 16, color: Colors.white12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: TextField(
+                    controller: _labelCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Alarm name',
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, indent: 16),
+                ListTile(
+                  title: const Text('Topics'),
+                  subtitle: Text(
+                    bank.describe(_topics),
+                    style: TextStyle(color: scheme.secondary),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _pickTopics,
+                ),
+                const Divider(height: 1, indent: 16),
                 ListTile(
                   title: const Text('Ringtone'),
-                  subtitle: Text(
-                    _audioName,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  subtitle: Text(_audioName, style: muted),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: _showRingtonePicker,
                 ),
-                const Divider(height: 1, indent: 16, color: Colors.white12),
+                const Divider(height: 1, indent: 16),
                 ListTile(
                   title: const Text('Fade-in Sound'),
                   subtitle: Text(
                     _fadeDuration == 0
                         ? 'None'
                         : '${_fadeDuration.toInt()} seconds',
-                    style: const TextStyle(color: Colors.grey),
+                    style: muted,
                   ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: _showFadePicker,
                 ),
-                const Divider(height: 1, indent: 16, color: Colors.white12),
+                const Divider(height: 1, indent: 16),
                 SwitchListTile(
                   title: const Text('Vibrate'),
-                  activeThumbColor: Colors.blueAccent,
                   value: _vibrate,
                   onChanged: (v) => setState(() => _vibrate = v),
                 ),
-                const Divider(height: 1, indent: 16, color: Colors.white12),
+                const Divider(height: 1, indent: 16),
                 ListTile(
                   title: const Text('Snooze'),
-                  subtitle: const Text(
-                    '5 minutes, mercy limited',
-                    style: TextStyle(color: Colors.grey),
+                  subtitle: Text(
+                    '5 minutes, only after 5 wrong answers in a row',
+                    style: muted,
                   ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onTap: () {},
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           if (widget.existingAlarm != null)
             TextButton(
@@ -449,9 +423,9 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                 ).deleteAlarm(widget.existingAlarm!.id);
                 Navigator.pop(context);
               },
-              child: const Text(
+              child: Text(
                 'Delete Alarm',
-                style: TextStyle(color: Colors.redAccent, fontSize: 16),
+                style: TextStyle(color: scheme.error, fontSize: 16),
               ),
             ),
         ],
@@ -459,32 +433,7 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     );
   }
 
-  Widget _buildSegment(String text, int index) {
-    final isSelected = _repeatMode == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _repeatMode = index),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blueAccent : const Color(0xFF333333),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDayBubble(String label, int dayIndex) {
+  Widget _buildDayBubble(String label, int dayIndex, ColorScheme scheme) {
     final isSelected = _customDays.contains(dayIndex);
     return GestureDetector(
       onTap: () {
@@ -498,13 +447,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
       },
       child: CircleAvatar(
         radius: 20,
-        backgroundColor: isSelected
-            ? Colors.blueAccent
-            : const Color(0xFF444444),
+        backgroundColor: isSelected ? scheme.primary : scheme.surface,
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
+            color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -512,37 +459,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     );
   }
 
-  Widget _buildTextFieldTile(
-    String label,
-    String initialValue,
-    Function(String) onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: TextField(
-        controller: TextEditingController(text: initialValue),
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white, fontSize: 16),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.grey),
-          border: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
   String _getCustomDaysText() {
-    if (_customDays.isEmpty) return 'Never';
+    if (_customDays.isEmpty) return 'No days picked: rings once';
     if (_customDays.length == 7) return 'Every day';
-    List<String> days = [];
-    if (_customDays.contains(1)) days.add('Mon');
-    if (_customDays.contains(2)) days.add('Tue');
-    if (_customDays.contains(3)) days.add('Wed');
-    if (_customDays.contains(4)) days.add('Thu');
-    if (_customDays.contains(5)) days.add('Fri');
-    if (_customDays.contains(6)) days.add('Sat');
-    if (_customDays.contains(7)) days.add('Sun');
-    return days.join(', ');
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final sorted = [..._customDays]..sort();
+    return sorted.map((d) => names[d - 1]).join(', ');
   }
 }
