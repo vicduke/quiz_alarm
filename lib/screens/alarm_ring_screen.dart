@@ -1,5 +1,6 @@
-/// Full-screen quiz shown while an alarm rings. Two correct answers in a
-/// row dismiss it; five wrong in a row unlock a 5-minute snooze.
+/// Full-screen quiz shown while an alarm rings. The alarm's difficulty sets
+/// how many correct answers in a row dismiss it; five wrong in a row unlock
+/// the snooze (length chosen per alarm).
 /// Questions come from the local database only, so it works offline.
 library;
 
@@ -115,12 +116,13 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
     if (isCorrect) {
       _correctStreak++;
       _wrongStreak = 0;
-      _feedbackMessage = 'Correct! ($_correctStreak/2)';
+      _feedbackMessage =
+          'Correct! ($_correctStreak/${widget.alarm.requiredStreak})';
       _feedbackColor = Colors.greenAccent;
       _sfx('correct');
       setState(() => _backgroundColor = Colors.green.shade800);
 
-      if (_correctStreak >= 2) {
+      if (_correctStreak >= widget.alarm.requiredStreak) {
         await _finish('dismissed');
         return;
       }
@@ -171,7 +173,9 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                         children: [
                           Chip(
                             avatar: const Icon(Icons.bolt, color: Colors.amber),
-                            label: Text('Streak: $_correctStreak / 2'),
+                            label: Text(
+                              'Streak: $_correctStreak / ${widget.alarm.requiredStreak}',
+                            ),
                           ),
                           if (widget.preview)
                             TextButton.icon(
@@ -218,7 +222,9 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                           ),
                           onPressed: () => _finish('snooze'),
                           icon: const Icon(Icons.snooze),
-                          label: const Text('Mercy Snooze (5 Minutes)'),
+                          label: Text(
+                            'Snooze (${widget.alarm.snoozeMinutes} minutes)',
+                          ),
                         ),
                     ],
                   ),

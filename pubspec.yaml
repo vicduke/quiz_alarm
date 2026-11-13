@@ -75,6 +75,7 @@ flutter:
     - assets/sounds/correct.mp3
     - assets/sounds/wrong.mp3
     - assets/sounds/alarm.mp3
+    - assets/sounds/ringtones/
     - assets/question_banks/
  
   # An image asset can refer to one or more resolution-specific "variants", see

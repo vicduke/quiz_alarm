@@ -123,7 +123,8 @@ class AlarmTab extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${a.label} - ${_days(a)}',
+                                          '${a.label} - ${_days(a)} - '
+                                          '${AlarmItem.difficultyName(a.requiredStreak)}',
                                           style: TextStyle(
                                             color: a.isEnabled
                                                 ? scheme.onSurfaceVariant

@@ -119,11 +119,12 @@ void main() {
       final a = alarm(7);
       await provider.addAlarm(a);
 
+      a.snoozeMinutes = 10;
       await provider.snoozeAlarm(a);
       final snoozeAt = backend.registered[7]!;
       expect(
         snoozeAt.difference(DateTime.now()).inMinutes,
-        inInclusiveRange(4, 5),
+        inInclusiveRange(9, 10),
       );
 
       await provider.dismissAlarm(a);
@@ -158,5 +159,32 @@ void main() {
     expect(await backend.isRinging(5), isFalse);
     expect(backend.scheduledTime(5), isNull);
     await sub.cancel();
+  });
+
+  test('difficulty and snooze length are saved; old alarms get defaults', () {
+    final a = alarm(1)
+      ..requiredStreak = 9
+      ..snoozeMinutes = 3;
+    final back = AlarmItem.fromJson(a.toJson());
+    expect(back.requiredStreak, 9);
+    expect(back.snoozeMinutes, 3);
+
+    final old = a.toJson()
+      ..remove('requiredStreak')
+      ..remove('snoozeMinutes');
+    expect(AlarmItem.fromJson(old).requiredStreak, 2);
+    expect(AlarmItem.fromJson(old).snoozeMinutes, 5);
+
+    // Out-of-range values from a bad file are pulled back into range.
+    final bad = a.toJson()
+      ..['requiredStreak'] = 99
+      ..['snoozeMinutes'] = 7;
+    expect(AlarmItem.fromJson(bad).requiredStreak, 15);
+    expect(AlarmItem.fromJson(bad).snoozeMinutes, 5);
+
+    expect(AlarmItem.difficultyName(2), 'Easy');
+    expect(AlarmItem.difficultyName(3), 'Medium');
+    expect(AlarmItem.difficultyName(5), 'Hard');
+    expect(AlarmItem.difficultyName(12), 'Custom');
   });
 }

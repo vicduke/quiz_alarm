@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -25,11 +26,22 @@ class EditAlarmScreen extends StatefulWidget {
 }
 
 class _EditAlarmScreenState extends State<EditAlarmScreen> {
-  // Preset ringtones (bundled in assets/sounds).
+  // Preset ringtones, bundled in assets/sounds (the ones in ringtones/
+  // are made by tool/make_ringtones.py).
   static const List<Map<String, String>> _defaultRingtones = [
     {'name': 'Default Alarm', 'path': 'assets/sounds/alarm.mp3'},
-    {'name': 'Correct Chime', 'path': 'assets/sounds/correct.mp3'},
-    {'name': 'Wrong Buzzer', 'path': 'assets/sounds/wrong.mp3'},
+    {
+      'name': 'Classic Beep',
+      'path': 'assets/sounds/ringtones/classic_beep.mp3',
+    },
+    {'name': 'Digital', 'path': 'assets/sounds/ringtones/digital.mp3'},
+    {
+      'name': 'Gentle Chime',
+      'path': 'assets/sounds/ringtones/gentle_chime.mp3',
+    },
+    {'name': 'Rising', 'path': 'assets/sounds/ringtones/rising.mp3'},
+    {'name': 'Siren', 'path': 'assets/sounds/ringtones/siren.mp3'},
+    {'name': 'Bell Tower', 'path': 'assets/sounds/ringtones/bell_tower.mp3'},
   ];
   static const List<double> _fadeOptions = [0.0, 5.0, 10.0, 30.0, 60.0];
 
@@ -40,6 +52,12 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   late String _audioName;
   late bool _vibrate;
   late double _fadeDuration;
+  late int _requiredStreak;
+  late int _snoozeMinutes;
+
+  // Plays ringtone previews in the picker.
+  final AudioPlayer _previewPlayer = AudioPlayer();
+  String? _previewing;
 
   int _repeatMode = 0; // 0 = Ring once, 1 = Custom
   List<int> _customDays = []; // 1=Mon, 7=Sun
@@ -55,6 +73,8 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     _audioName = _nameOf(_audioPath);
     _vibrate = a?.vibrate ?? true;
     _fadeDuration = a?.fadeDuration ?? 5.0;
+    _requiredStreak = a?.requiredStreak ?? 2;
+    _snoozeMinutes = a?.snoozeMinutes ?? 5;
 
     if (a != null && a.activeDays.isNotEmpty) {
       _repeatMode = 1;
@@ -65,6 +85,7 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   @override
   void dispose() {
     _labelCtrl.dispose();
+    _previewPlayer.dispose();
     super.dispose();
   }
 
@@ -99,6 +120,8 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
       activeDays: List.of(_activeDays),
       fadeDuration: _fadeDuration,
       volume: widget.existingAlarm?.volume ?? 1.0,
+      requiredStreak: _requiredStreak,
+      snoozeMinutes: _snoozeMinutes,
     );
 
     if (widget.existingAlarm == null) {
@@ -148,7 +171,123 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
     }
   }
 
+  Future<void> _stopPreview() async {
+    _previewing = null;
+    try {
+      await _previewPlayer.stop();
+    } catch (_) {}
+  }
+
+  /// Plays [path] once, or stops it if it is the one playing.
+  Future<void> _togglePreview(String path, StateSetter refresh) async {
+    if (_previewing == path) {
+      await _stopPreview();
+      refresh(() {});
+      return;
+    }
+    refresh(() => _previewing = path);
+    try {
+      await _previewPlayer.stop();
+      await _previewPlayer.play(
+        path.startsWith('assets/')
+            ? AssetSource(path.substring('assets/'.length))
+            : DeviceFileSource(path),
+      );
+    } catch (e) {
+      debugPrint('Ringtone preview failed: $e');
+    }
+  }
+
   void _showRingtonePicker() {
+    final custom = !_defaultRingtones.any((t) => t['path'] == _audioPath);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, refresh) {
+          Widget toneTile(String name, String path) => ListTile(
+            leading: IconButton(
+              tooltip: 'Preview',
+              icon: Icon(
+                _previewing == path ? Icons.stop_circle : Icons.play_circle,
+              ),
+              onPressed: () => _togglePreview(path, refresh),
+            ),
+            title: Text(name),
+            trailing: _audioPath == path ? const Icon(Icons.check) : null,
+            onTap: () {
+              setState(() {
+                _audioPath = path;
+                _audioName = name;
+              });
+              refresh(() {});
+            },
+          );
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.8,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Select Ringtone',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final tone in _defaultRingtones)
+                          toneTile(tone['name']!, tone['path']!),
+                        if (custom) toneTile(_audioName, _audioPath),
+                        const Divider(),
+                        ListTile(
+                          leading: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(Icons.upload_file),
+                          ),
+                          title: const Text('Upload from phone files...'),
+                          // Copying a picked file needs real file storage.
+                          subtitle: kIsWeb
+                              ? const Text('Available in the phone app')
+                              : const Text('Any audio file (mp3, m4a, wav...)'),
+                          enabled: !kIsWeb,
+                          onTap: () async {
+                            await _stopPreview();
+                            if (sheetContext.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                            _pickAudioFile();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(_stopPreview);
+  }
+
+  void _showSnoozePicker() {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -158,40 +297,128 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Select Ringtone',
+                'Snooze length',
                 style: Theme.of(sheetContext).textTheme.titleLarge,
               ),
-              const SizedBox(height: 8),
-              for (final tone in _defaultRingtones)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                child: Text(
+                  'The snooze button appears after 5 wrong answers in a row.',
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              for (final minutes in AlarmItem.snoozeChoices)
                 ListTile(
-                  title: Text(tone['name']!),
-                  trailing: _audioPath == tone['path']
+                  title: Text('$minutes minutes'),
+                  trailing: _snoozeMinutes == minutes
                       ? const Icon(Icons.check)
                       : null,
                   onTap: () {
-                    setState(() {
-                      _audioPath = tone['path']!;
-                      _audioName = tone['name']!;
-                    });
+                    setState(() => _snoozeMinutes = minutes);
                     Navigator.pop(sheetContext);
                   },
                 ),
-              // Copying a picked file needs real file storage.
-              if (!kIsWeb) ...[
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.folder_open),
-                  title: const Text('Pick from device...'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _pickAudioFile();
-                  },
-                ),
-              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  String _difficultyText(int streak) =>
+      '${AlarmItem.difficultyName(streak)}: $streak correct in a row';
+
+  void _showDifficultyPicker() {
+    const presets = [2, 3, 5];
+    var custom = !presets.contains(_requiredStreak);
+    var customValue = custom ? _requiredStreak.clamp(6, 15) : 6;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, refresh) {
+          void choose(int streak, {required bool isCustom}) {
+            refresh(() => custom = isCustom);
+            setState(() => _requiredStreak = streak);
+          }
+
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Difficulty',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                  child: Text(
+                    'How many questions you must get right in a row to '
+                    'switch the alarm off. A wrong answer restarts the count.',
+                    style: Theme.of(sheetContext).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                for (final streak in presets)
+                  ListTile(
+                    title: Text(AlarmItem.difficultyName(streak)),
+                    subtitle: Text('$streak correct in a row'),
+                    trailing: !custom && _requiredStreak == streak
+                        ? const Icon(Icons.check)
+                        : null,
+                    onTap: () => choose(streak, isCustom: false),
+                  ),
+                ListTile(
+                  title: const Text('Custom'),
+                  subtitle: Text(
+                    custom
+                        ? '$customValue correct in a row'
+                        : '6 to 15 correct in a row',
+                  ),
+                  trailing: custom ? const Icon(Icons.check) : null,
+                  onTap: () => choose(customValue, isCustom: true),
+                ),
+                if (custom)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Text('6'),
+                        Expanded(
+                          child: Slider(
+                            min: 6,
+                            max: 15,
+                            divisions: 9,
+                            label: '$customValue',
+                            value: customValue.toDouble(),
+                            onChanged: (v) {
+                              customValue = v.round();
+                              choose(customValue, isCustom: true);
+                            },
+                          ),
+                        ),
+                        const Text('15'),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -378,6 +605,16 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                 ),
                 const Divider(height: 1, indent: 16),
                 ListTile(
+                  title: const Text('Difficulty'),
+                  subtitle: Text(
+                    _difficultyText(_requiredStreak),
+                    style: muted,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showDifficultyPicker,
+                ),
+                const Divider(height: 1, indent: 16),
+                ListTile(
                   title: const Text('Ringtone'),
                   subtitle: Text(_audioName, style: muted),
                   trailing: const Icon(Icons.chevron_right),
@@ -405,9 +642,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                 ListTile(
                   title: const Text('Snooze'),
                   subtitle: Text(
-                    '5 minutes, only after 5 wrong answers in a row',
+                    '$_snoozeMinutes minutes, after 5 wrong answers in a row',
                     style: muted,
                   ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showSnoozePicker,
                 ),
               ],
             ),

@@ -1,8 +1,9 @@
 # BrainWake (quiz_alarm)
 
 An alarm clock you can only switch off by answering revision questions:
-**2 correct in a row** dismisses it; 5 wrong in a row unlocks a 5-minute
-"mercy snooze". Outside alarms, the same question bank is used for study.
+**a streak of correct answers** dismisses it (easy 2, medium 3, hard 5, custom
+up to 15); 5 wrong in a row unlocks a snooze of 3, 5 or 10 minutes (the
+"mercy snooze"). Outside alarms, the same question bank is used for study.
 
 ## What's in the app
 

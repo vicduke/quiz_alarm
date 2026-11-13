@@ -176,7 +176,9 @@ class AlarmProvider extends ChangeNotifier {
       volume: alarm.volume,
       fadeDuration: alarm.fadeDuration,
       title: title ?? name,
-      body: body ?? 'Solve 2 questions ($topics) to dismiss!',
+      body:
+          body ??
+          'Answer ${alarm.requiredStreak} in a row ($topics) to dismiss!',
     );
   }
 
@@ -230,13 +232,15 @@ class AlarmProvider extends ChangeNotifier {
     unawaited(refillQuestionBank());
   }
 
-  Future<void> snoozeAlarm(AlarmItem alarm, {int minutes = 5}) async {
+  /// Silences [alarm] and rings it again after its own snooze length.
+  Future<void> snoozeAlarm(AlarmItem alarm) async {
     await backend.set(
       await _request(
         alarm,
-        DateTime.now().add(Duration(minutes: minutes)),
+        DateTime.now().add(Duration(minutes: alarm.snoozeMinutes)),
         title: '${alarm.label} (Snoozed)',
-        body: 'Mercy snooze ended! Answer 2 questions to dismiss.',
+        body:
+            'Snooze ended! Answer ${alarm.requiredStreak} in a row to dismiss.',
       ),
     );
   }

@@ -147,6 +147,25 @@ class AlarmItem {
   double fadeDuration; // Seconds for gradual volume fade-in
   double volume; // 0.0 to 1.0 enforced volume
 
+  /// Correct answers in a row needed to dismiss the alarm
+  /// (easy 2, medium 3, hard 5, custom 6 to 15).
+  int requiredStreak;
+
+  /// Length of the snooze, in minutes (3, 5 or 10).
+  int snoozeMinutes;
+
+  static const int minStreak = 1;
+  static const int maxStreak = 15;
+  static const List<int> snoozeChoices = [3, 5, 10];
+
+  /// "Easy", "Medium", "Hard" or "Custom" for [streak].
+  static String difficultyName(int streak) => switch (streak) {
+    2 => 'Easy',
+    3 => 'Medium',
+    5 => 'Hard',
+    _ => 'Custom',
+  };
+
   AlarmItem({
     required this.id,
     required this.time,
@@ -158,6 +177,8 @@ class AlarmItem {
     this.vibrate = true,
     this.fadeDuration = 5.0,
     this.volume = 1.0,
+    this.requiredStreak = 2,
+    this.snoozeMinutes = 5,
   });
 
   /// A random id that is not in [taken].
@@ -182,6 +203,8 @@ class AlarmItem {
     'vibrate': vibrate,
     'fadeDuration': fadeDuration,
     'volume': volume,
+    'requiredStreak': requiredStreak,
+    'snoozeMinutes': snoozeMinutes,
   };
 
   factory AlarmItem.fromJson(Map<String, dynamic> json) => AlarmItem(
@@ -197,5 +220,12 @@ class AlarmItem {
     vibrate: json['vibrate'] ?? true,
     fadeDuration: (json['fadeDuration'] ?? 5.0).toDouble(),
     volume: (json['volume'] ?? 1.0).toDouble(),
+    requiredStreak: ((json['requiredStreak'] ?? 2) as num).toInt().clamp(
+      minStreak,
+      maxStreak,
+    ),
+    snoozeMinutes: snoozeChoices.contains(json['snoozeMinutes'])
+        ? json['snoozeMinutes'] as int
+        : 5,
   );
 }

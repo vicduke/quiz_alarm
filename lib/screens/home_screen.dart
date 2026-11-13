@@ -47,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         if (result == 'snooze' && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Mercy Snooze active for 5 minutes.'),
+            SnackBar(
+              content: Text('Snoozed for ${alarm.snoozeMinutes} minutes.'),
               backgroundColor: Colors.orange,
             ),
           );
