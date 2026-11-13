@@ -12,7 +12,6 @@ up to 15); 5 wrong in a row unlocks a snooze of 3, 5 or 10 minutes (the
 | **Alarms** | Alarms with repeat days, ringtone, fade-in and the topics to ask about. |
 | **Question Banks** | Units -> topics with progress. Practise a topic offline: after each answer you get the correct answer and a stored explanation. "Generate with AI" adds more questions. |
 | **Free Revision** | Flash cards over random or chosen topics. With a Gemini key, the AI tutor explains where your answer went wrong; offline it falls back to the stored explanation. |
-
 | **Reports** | Totals, a 14-day chart, accuracy per topic, average time and number of questions it takes to dismiss an alarm, and the history of every alarm and practice session. Tap a session to see each question, what you answered, the correct answer and the explanation. |
 
 Settings holds the theme, the Gemini API key / model, and the status of AI
