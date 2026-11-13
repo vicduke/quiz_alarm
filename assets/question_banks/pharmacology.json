@@ -1,0 +1,810 @@
+{
+  "version": 2,
+  "unit": {
+    "id": "pharmacology",
+    "name": "Pharmacology",
+    "description": "Starter test data. Subtopics and questions will be replaced with the full unit outline."
+  },
+  "topics": [
+    {
+      "id": "pharm-general-principles",
+      "name": "General principles",
+      "questions": [
+        {
+          "id": "pharm-gp-001",
+          "type": "mcq",
+          "text": "First-pass metabolism of an orally administered drug takes place mainly in which organ?",
+          "options": [
+            "Liver",
+            "Kidney",
+            "Lungs",
+            "Spleen",
+            "Pancreas"
+          ],
+          "answer": "Liver",
+          "explanation": "Drugs absorbed from the gut travel in the portal vein to the liver before reaching the systemic circulation. Hepatic enzymes can metabolise a large fraction on this first pass (the gut wall contributes a little), which lowers oral bioavailability. The kidneys mainly excrete drugs rather than metabolise them."
+        },
+        {
+          "id": "pharm-gp-002",
+          "type": "saq",
+          "text": "What term describes the fraction of an administered dose that reaches the systemic circulation unchanged?",
+          "answer": "Bioavailability",
+          "explanation": "Bioavailability (F) is the proportion of a dose that reaches the systemic circulation in active form. It is 100% for an intravenous dose and lower for oral doses because of incomplete absorption and first-pass metabolism."
+        },
+        {
+          "id": "pharm-gp-003",
+          "type": "mcq",
+          "text": "With regular dosing at a constant rate, steady-state plasma concentration is reached after approximately how many half-lives?",
+          "options": [
+            "4 to 5 half-lives",
+            "1 half-life",
+            "2 half-lives",
+            "10 half-lives",
+            "7 to 8 half-lives"
+          ],
+          "answer": "4 to 5 half-lives",
+          "explanation": "Accumulation follows first-order kinetics: 50% of steady state after 1 half-life, 75% after 2, about 94% after 4 and 97% after 5. So a drug is considered at steady state after 4 to 5 half-lives, whatever the dose. The same time is needed for it to be eliminated after stopping."
+        },
+        {
+          "id": "pharm-gp-004",
+          "type": "mcq",
+          "text": "A drug binds a receptor but produces only a submaximal response even when every receptor is occupied. What is it?",
+          "options": [
+            "Partial agonist",
+            "Full agonist",
+            "Competitive antagonist",
+            "Inverse agonist",
+            "Non-competitive antagonist"
+          ],
+          "answer": "Partial agonist",
+          "explanation": "A partial agonist has affinity for the receptor but lower intrinsic efficacy than a full agonist, so its maximum effect is smaller even at full occupancy. A competitive antagonist has affinity but zero efficacy; an inverse agonist reduces the receptor's baseline activity."
+        },
+        {
+          "id": "pharm-gp-005",
+          "type": "saq",
+          "text": "Which family of liver enzymes carries out most phase I drug metabolism?",
+          "answer": "Cytochrome P450",
+          "alt_answers": [
+            "CYP450",
+            "CYP",
+            "P450",
+            "Cytochrome P450 enzymes"
+          ],
+          "explanation": "The cytochrome P450 (CYP) mixed-function oxidases, especially CYP3A4 and CYP2D6, perform most phase I reactions (oxidation, reduction, hydrolysis). Many drug interactions come from induction or inhibition of these enzymes."
+        },
+        {
+          "id": "pharm-gp-006",
+          "type": "mcq",
+          "text": "A drug with a very large volume of distribution is most likely to be:",
+          "options": [
+            "Extensively distributed into the tissues",
+            "Confined to the plasma",
+            "Highly bound to plasma albumin",
+            "Rapidly excreted unchanged in the urine",
+            "Unable to cross cell membranes"
+          ],
+          "answer": "Extensively distributed into the tissues",
+          "explanation": "Volume of distribution relates the amount of drug in the body to its plasma concentration. A large value means little drug stays in the plasma because it has moved into tissues (for example lipid-soluble drugs such as chloroquine or digoxin). Drugs confined to plasma or tightly bound to albumin have a small volume of distribution."
+        },
+        {
+          "id": "pharm-gp-007",
+          "type": "saq",
+          "text": "In which order of kinetics is a constant amount of drug, not a constant fraction, eliminated per unit time?",
+          "answer": "Zero-order",
+          "explanation": "In zero-order (saturation) kinetics the eliminating enzymes are saturated, so the same amount is removed each hour whatever the concentration. Alcohol, phenytoin and high-dose aspirin behave this way, which is why small dose increases can cause toxicity. Most drugs follow first-order kinetics, where a constant fraction is eliminated.",
+          "alt_answers": [
+            "Zero order",
+            "Zero-order kinetics",
+            "Zero order kinetics",
+            "Saturation kinetics"
+          ]
+        },
+        {
+          "id": "pharm-gp-008",
+          "type": "mcq",
+          "text": "Which term describes the maximum response a drug can produce, however large the dose?",
+          "options": [
+            "Efficacy",
+            "Potency",
+            "Affinity",
+            "Selectivity",
+            "Bioavailability"
+          ],
+          "answer": "Efficacy",
+          "explanation": "Efficacy (Emax) is the greatest effect a drug can achieve. Potency is about how much drug is needed for a given effect (EC50), and affinity about how tightly it binds its receptor. A drug can be very potent yet have low efficacy, as partial agonists do."
+        },
+        {
+          "id": "pharm-gp-009",
+          "type": "mcq",
+          "text": "The therapeutic index of a drug is the ratio of:",
+          "options": [
+            "The toxic dose (TD50) to the effective dose (ED50)",
+            "The effective dose (ED50) to the toxic dose (TD50)",
+            "Peak to trough plasma concentration",
+            "Bound to unbound drug in plasma",
+            "Clearance to volume of distribution"
+          ],
+          "answer": "The toxic dose (TD50) to the effective dose (ED50)",
+          "explanation": "Therapeutic index = TD50 / ED50. A high value means a wide margin between the dose that works and the dose that harms. Drugs with a low index, such as digoxin, lithium, warfarin and theophylline, need careful dosing and often monitoring of plasma levels."
+        },
+        {
+          "id": "pharm-gp-010",
+          "type": "saq",
+          "text": "What is the most common phase II (conjugation) reaction in human drug metabolism?",
+          "answer": "Glucuronidation",
+          "explanation": "Phase II reactions attach a polar group so the drug can be excreted in urine or bile. Glucuronidation, carried out by UDP-glucuronosyltransferases, is the most common. Newborns have low activity of this enzyme, which is why chloramphenicol can cause grey baby syndrome.",
+          "alt_answers": [
+            "Glucuronide conjugation",
+            "Conjugation with glucuronic acid",
+            "Glucuronic acid conjugation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pharm-autonomic",
+      "name": "Autonomic nervous system",
+      "questions": [
+        {
+          "id": "pharm-ans-001",
+          "type": "mcq",
+          "text": "What is the mechanism of action of atropine?",
+          "options": [
+            "Muscarinic receptor antagonist",
+            "Nicotinic receptor antagonist",
+            "Acetylcholinesterase inhibitor",
+            "Beta-adrenoceptor agonist",
+            "Alpha-adrenoceptor antagonist"
+          ],
+          "answer": "Muscarinic receptor antagonist",
+          "explanation": "Atropine competitively blocks muscarinic acetylcholine receptors, producing tachycardia, dry mouth, mydriasis and reduced gut motility. It has little effect at nicotinic receptors, which is why it does not cause muscle paralysis."
+        },
+        {
+          "id": "pharm-ans-002",
+          "type": "saq",
+          "text": "Which drug is the first-line treatment for anaphylaxis?",
+          "answer": "Adrenaline",
+          "alt_answers": [
+            "Epinephrine",
+            "Intramuscular adrenaline",
+            "IM adrenaline",
+            "IM epinephrine"
+          ],
+          "explanation": "Intramuscular adrenaline (epinephrine) is first line. Alpha-1 stimulation reverses vasodilation and oedema, beta-1 supports cardiac output and beta-2 relieves bronchospasm and stabilises mast cells. Antihistamines and steroids are only adjuncts."
+        },
+        {
+          "id": "pharm-ans-003",
+          "type": "mcq",
+          "text": "Which of these is a short-acting selective beta-2 agonist used to relieve acute asthma?",
+          "options": [
+            "Salbutamol",
+            "Propranolol",
+            "Atenolol",
+            "Ipratropium",
+            "Montelukast"
+          ],
+          "answer": "Salbutamol",
+          "explanation": "Salbutamol stimulates beta-2 receptors on bronchial smooth muscle, raising cAMP and causing rapid bronchodilation. Propranolol and atenolol are beta-blockers (propranolol can worsen asthma); ipratropium bronchodilates by blocking muscarinic receptors, not by beta-2 agonism."
+        },
+        {
+          "id": "pharm-ans-004",
+          "type": "saq",
+          "text": "Which neurotransmitter is released by all preganglionic autonomic neurons?",
+          "answer": "Acetylcholine",
+          "alt_answers": [
+            "ACh"
+          ],
+          "explanation": "Both sympathetic and parasympathetic preganglionic fibres release acetylcholine onto nicotinic receptors in the ganglia. The divisions differ at the postganglionic synapse: mostly noradrenaline for sympathetic, acetylcholine for parasympathetic."
+        },
+        {
+          "id": "pharm-ans-005",
+          "type": "mcq",
+          "text": "How does neostigmine produce its effects?",
+          "options": [
+            "It inhibits acetylcholinesterase",
+            "It blocks muscarinic receptors",
+            "It directly activates nicotinic receptors",
+            "It blocks acetylcholine release",
+            "It inhibits choline acetyltransferase"
+          ],
+          "answer": "It inhibits acetylcholinesterase",
+          "explanation": "Neostigmine reversibly inhibits acetylcholinesterase, so acetylcholine accumulates at the synapse. That is why it is used in myasthenia gravis and to reverse non-depolarising neuromuscular blockers. It is not a receptor agonist itself."
+        },
+        {
+          "id": "pharm-ans-006",
+          "type": "mcq",
+          "text": "Which of these beta-blockers is non-selective and should be avoided in asthma?",
+          "options": [
+            "Propranolol",
+            "Atenolol",
+            "Bisoprolol",
+            "Metoprolol",
+            "Nebivolol"
+          ],
+          "answer": "Propranolol",
+          "explanation": "Propranolol blocks beta-1 and beta-2 receptors. Blocking beta-2 in the airways can trigger severe bronchospasm in asthma. Atenolol, bisoprolol, metoprolol and nebivolol are relatively beta-1 (cardio) selective, although even these are used with caution."
+        },
+        {
+          "id": "pharm-ans-007",
+          "type": "mcq",
+          "text": "Phenylephrine acts mainly by stimulating which receptor?",
+          "options": [
+            "Alpha-1 adrenoceptors",
+            "Alpha-2 adrenoceptors",
+            "Beta-1 adrenoceptors",
+            "Beta-2 adrenoceptors",
+            "Muscarinic M3 receptors"
+          ],
+          "answer": "Alpha-1 adrenoceptors",
+          "explanation": "Phenylephrine is a selective alpha-1 agonist. It constricts blood vessels, which is why it is used as a nasal decongestant, to raise blood pressure, and to dilate the pupil. It has little effect on beta receptors, so it does not directly increase heart rate."
+        },
+        {
+          "id": "pharm-ans-008",
+          "type": "saq",
+          "text": "Which drug is given in organophosphate poisoning to block the muscarinic effects of excess acetylcholine?",
+          "answer": "Atropine",
+          "explanation": "Organophosphates irreversibly inhibit acetylcholinesterase, so acetylcholine accumulates. Atropine blocks muscarinic receptors and reverses the bradycardia, bronchial secretions and bronchospasm. Pralidoxime is added to reactivate the enzyme, but it does not block the receptors itself."
+        },
+        {
+          "id": "pharm-ans-009",
+          "type": "mcq",
+          "text": "Pilocarpine lowers intraocular pressure in glaucoma because it is a:",
+          "options": [
+            "Muscarinic agonist",
+            "Muscarinic antagonist",
+            "Beta-blocker",
+            "Carbonic anhydrase inhibitor",
+            "Alpha-2 agonist"
+          ],
+          "answer": "Muscarinic agonist",
+          "explanation": "Pilocarpine stimulates muscarinic M3 receptors, contracting the ciliary muscle and the sphincter of the pupil. This opens the trabecular meshwork and improves drainage of aqueous humour. Muscarinic antagonists such as atropine do the opposite and can precipitate angle-closure glaucoma."
+        },
+        {
+          "id": "pharm-ans-010",
+          "type": "saq",
+          "text": "Which enzyme breaks down acetylcholine in the synaptic cleft?",
+          "answer": "Acetylcholinesterase",
+          "explanation": "Acetylcholinesterase rapidly hydrolyses acetylcholine into choline and acetate, ending its action. Drugs that inhibit it, such as neostigmine and donepezil, prolong the action of acetylcholine.",
+          "alt_answers": [
+            "AChE",
+            "Cholinesterase",
+            "Acetyl cholinesterase"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pharm-cardiovascular",
+      "name": "Cardiovascular drugs",
+      "questions": [
+        {
+          "id": "pharm-cvs-001",
+          "type": "mcq",
+          "text": "A persistent dry cough is a characteristic side effect of which drug class?",
+          "options": [
+            "ACE inhibitors",
+            "Calcium channel blockers",
+            "Thiazide diuretics",
+            "Beta-blockers",
+            "Loop diuretics"
+          ],
+          "answer": "ACE inhibitors",
+          "explanation": "ACE also breaks down bradykinin. Inhibiting it (for example with enalapril) lets bradykinin accumulate in the airways, causing a dry cough in roughly 10% of patients. Switching to an angiotensin receptor blocker such as losartan avoids this."
+        },
+        {
+          "id": "pharm-cvs-002",
+          "type": "saq",
+          "text": "Which vitamin is given to reverse the anticoagulant effect of warfarin?",
+          "answer": "Vitamin K",
+          "alt_answers": [
+            "Phytomenadione",
+            "Vitamin K1",
+            "Phytonadione"
+          ],
+          "explanation": "Warfarin blocks vitamin K epoxide reductase, so the liver cannot activate clotting factors II, VII, IX and X. Giving vitamin K (phytomenadione) restores their synthesis over hours; for major bleeding, prothrombin complex concentrate is added for an immediate effect."
+        },
+        {
+          "id": "pharm-cvs-003",
+          "type": "mcq",
+          "text": "Furosemide acts on which part of the nephron?",
+          "options": [
+            "Thick ascending limb of the loop of Henle",
+            "Proximal convoluted tubule",
+            "Distal convoluted tubule",
+            "Collecting duct",
+            "Glomerulus"
+          ],
+          "answer": "Thick ascending limb of the loop of Henle",
+          "explanation": "Loop diuretics block the Na+/K+/2Cl- cotransporter (NKCC2) in the thick ascending limb, giving a powerful diuresis. Thiazides act on the distal convoluted tubule, and potassium-sparing diuretics such as spironolactone on the collecting duct."
+        },
+        {
+          "id": "pharm-cvs-004",
+          "type": "mcq",
+          "text": "Statins lower cholesterol by inhibiting which enzyme?",
+          "options": [
+            "HMG-CoA reductase",
+            "Lipoprotein lipase",
+            "Cholesterol ester transfer protein",
+            "Acetyl-CoA carboxylase",
+            "Squalene epoxidase"
+          ],
+          "answer": "HMG-CoA reductase",
+          "explanation": "HMG-CoA reductase is the rate-limiting enzyme of hepatic cholesterol synthesis. Inhibiting it makes hepatocytes express more LDL receptors, which clears LDL from the blood. Muscle pain and raised liver enzymes are the main adverse effects."
+        },
+        {
+          "id": "pharm-cvs-005",
+          "type": "saq",
+          "text": "Which electrolyte disturbance most increases the risk of digoxin toxicity?",
+          "answer": "Hypokalaemia",
+          "alt_answers": [
+            "Hypokalemia",
+            "Low potassium",
+            "Low serum potassium"
+          ],
+          "explanation": "Digoxin competes with potassium for its binding site on the Na+/K+-ATPase. When potassium is low, more digoxin binds and toxicity (arrhythmias, nausea, visual disturbance) occurs at normal doses. This matters when digoxin is combined with loop or thiazide diuretics."
+        },
+        {
+          "id": "pharm-cvs-006",
+          "type": "mcq",
+          "text": "Amlodipine lowers blood pressure by blocking:",
+          "options": [
+            "L-type calcium channels",
+            "Beta-1 adrenoceptors",
+            "Angiotensin II receptors",
+            "The sodium-potassium ATPase",
+            "Aldosterone receptors"
+          ],
+          "answer": "L-type calcium channels",
+          "explanation": "Amlodipine is a dihydropyridine calcium channel blocker. Blocking L-type calcium channels in vascular smooth muscle causes arterial vasodilation and lowers blood pressure. Ankle swelling, flushing and headache are its typical side effects."
+        },
+        {
+          "id": "pharm-cvs-007",
+          "type": "saq",
+          "text": "What is the antidote for heparin overdose?",
+          "answer": "Protamine sulfate",
+          "explanation": "Protamine is a positively charged protein that binds the negatively charged heparin and neutralises it within minutes. It fully reverses unfractionated heparin but only partly reverses low-molecular-weight heparins.",
+          "alt_answers": [
+            "Protamine",
+            "Protamine sulphate"
+          ]
+        },
+        {
+          "id": "pharm-cvs-008",
+          "type": "mcq",
+          "text": "Which diuretic is a competitive aldosterone antagonist and can cause hyperkalaemia?",
+          "options": [
+            "Spironolactone",
+            "Furosemide",
+            "Hydrochlorothiazide",
+            "Mannitol",
+            "Acetazolamide"
+          ],
+          "answer": "Spironolactone",
+          "explanation": "Spironolactone blocks aldosterone receptors in the collecting duct, so sodium is lost and potassium is retained. It can therefore cause hyperkalaemia, and gynaecomastia through its anti-androgen effect. Furosemide and thiazides cause potassium loss instead."
+        },
+        {
+          "id": "pharm-cvs-009",
+          "type": "mcq",
+          "text": "Glyceryl trinitrate relieves angina mainly by:",
+          "options": [
+            "Dilating veins, which reduces preload",
+            "Increasing the heart rate",
+            "Blocking beta-1 adrenoceptors",
+            "Inhibiting platelet aggregation",
+            "Increasing myocardial contractility"
+          ],
+          "answer": "Dilating veins, which reduces preload",
+          "explanation": "Nitrates release nitric oxide, which relaxes vascular smooth muscle, mostly in veins. Less blood returns to the heart, so preload, wall tension and oxygen demand fall. It is given under the tongue to avoid first-pass metabolism."
+        },
+        {
+          "id": "pharm-cvs-010",
+          "type": "saq",
+          "text": "Clopidogrel prevents platelet aggregation by blocking which receptor?",
+          "answer": "P2Y12",
+          "explanation": "Clopidogrel is a prodrug whose active metabolite irreversibly blocks the P2Y12 ADP receptor on platelets, so ADP can no longer activate them. Aspirin works differently, by inhibiting cyclo-oxygenase and thromboxane A2 production.",
+          "alt_answers": [
+            "P2Y12 receptor",
+            "ADP receptor",
+            "P2Y12 ADP receptor",
+            "ADP P2Y12 receptor"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pharm-cns",
+      "name": "Central nervous system drugs",
+      "questions": [
+        {
+          "id": "pharm-cns-001",
+          "type": "mcq",
+          "text": "How do benzodiazepines enhance the effect of GABA at the GABA-A receptor?",
+          "options": [
+            "They increase the frequency of chloride channel opening",
+            "They increase the duration of chloride channel opening",
+            "They open the chloride channel directly without GABA",
+            "They block GABA reuptake",
+            "They block NMDA glutamate receptors"
+          ],
+          "answer": "They increase the frequency of chloride channel opening",
+          "explanation": "Benzodiazepines bind an allosteric site and make the channel open more often when GABA is present. Barbiturates instead prolong the duration of opening and at high doses open the channel directly, which is why they are more dangerous in overdose."
+        },
+        {
+          "id": "pharm-cns-002",
+          "type": "saq",
+          "text": "What is the specific antidote for benzodiazepine overdose?",
+          "answer": "Flumazenil",
+          "explanation": "Flumazenil is a competitive antagonist at the benzodiazepine site of the GABA-A receptor. It has a short half-life, so sedation can return, and it may provoke seizures in patients dependent on benzodiazepines."
+        },
+        {
+          "id": "pharm-cns-003",
+          "type": "mcq",
+          "text": "Why is levodopa combined with carbidopa in Parkinson's disease?",
+          "options": [
+            "To reduce peripheral conversion of levodopa to dopamine",
+            "To increase dopamine receptor sensitivity",
+            "To inhibit dopamine breakdown in the brain",
+            "To block peripheral dopamine receptors",
+            "To increase absorption of levodopa from the gut"
+          ],
+          "answer": "To reduce peripheral conversion of levodopa to dopamine",
+          "explanation": "Carbidopa inhibits DOPA decarboxylase outside the brain and does not cross the blood-brain barrier. More levodopa therefore reaches the brain, and peripheral dopamine effects such as nausea and hypotension are reduced."
+        },
+        {
+          "id": "pharm-cns-004",
+          "type": "mcq",
+          "text": "Fluoxetine belongs to which class of antidepressants?",
+          "options": [
+            "Selective serotonin reuptake inhibitors",
+            "Tricyclic antidepressants",
+            "Monoamine oxidase inhibitors",
+            "Serotonin-noradrenaline reuptake inhibitors",
+            "Atypical antipsychotics"
+          ],
+          "answer": "Selective serotonin reuptake inhibitors",
+          "explanation": "Fluoxetine selectively blocks the serotonin transporter (SERT), raising synaptic serotonin. SSRIs are first line for depression because they are safer in overdose than tricyclics and need no dietary restrictions, unlike MAO inhibitors."
+        },
+        {
+          "id": "pharm-cns-005",
+          "type": "saq",
+          "text": "What is the specific antidote for opioid overdose?",
+          "answer": "Naloxone",
+          "explanation": "Naloxone is a competitive antagonist at mu-opioid receptors and rapidly reverses respiratory depression. Its half-life is shorter than that of most opioids, so repeated doses or an infusion may be needed."
+        },
+        {
+          "id": "pharm-cns-006",
+          "type": "mcq",
+          "text": "Which adverse effect is most characteristic of typical antipsychotics such as haloperidol?",
+          "options": [
+            "Extrapyramidal side effects",
+            "Agranulocytosis",
+            "Hepatic necrosis",
+            "Nephrogenic diabetes insipidus",
+            "Gingival hyperplasia"
+          ],
+          "answer": "Extrapyramidal side effects",
+          "explanation": "Haloperidol strongly blocks dopamine D2 receptors in the nigrostriatal pathway, causing dystonia, parkinsonism, akathisia and later tardive dyskinesia. Agranulocytosis is linked to clozapine, nephrogenic diabetes insipidus to lithium and gingival hyperplasia to phenytoin."
+        },
+        {
+          "id": "pharm-cns-007",
+          "type": "saq",
+          "text": "Which mood stabiliser has a narrow therapeutic range and needs regular monitoring of its plasma level?",
+          "answer": "Lithium",
+          "explanation": "Lithium is effective in bipolar disorder but toxic just above its therapeutic range, causing tremor, confusion and kidney damage. Levels rise with dehydration, NSAIDs, ACE inhibitors and thiazides. Thyroid and renal function are also checked regularly.",
+          "alt_answers": [
+            "Lithium carbonate"
+          ]
+        },
+        {
+          "id": "pharm-cns-008",
+          "type": "mcq",
+          "text": "Phenytoin controls seizures mainly by blocking:",
+          "options": [
+            "Voltage-gated sodium channels",
+            "T-type calcium channels",
+            "GABA transaminase",
+            "NMDA receptors",
+            "Potassium channels"
+          ],
+          "answer": "Voltage-gated sodium channels",
+          "explanation": "Phenytoin holds voltage-gated sodium channels in their inactivated state, which stops neurons firing at high frequency. T-type calcium channels are the target of ethosuximide, and GABA transaminase the target of vigabatrin."
+        },
+        {
+          "id": "pharm-cns-009",
+          "type": "mcq",
+          "text": "Which drug is first-line for absence seizures?",
+          "options": [
+            "Ethosuximide",
+            "Phenytoin",
+            "Carbamazepine",
+            "Phenobarbital",
+            "Gabapentin"
+          ],
+          "answer": "Ethosuximide",
+          "explanation": "Ethosuximide blocks T-type calcium channels in thalamic neurons, which generate the 3 Hz spike-and-wave pattern of absence seizures. Sodium valproate is the main alternative. Phenytoin and carbamazepine can make absence seizures worse."
+        },
+        {
+          "id": "pharm-cns-010",
+          "type": "saq",
+          "text": "Which inhaled anaesthetic gas is commonly called \"laughing gas\"?",
+          "answer": "Nitrous oxide",
+          "explanation": "Nitrous oxide is a weak anaesthetic but a good analgesic with rapid onset and recovery. It is used with oxygen for pain relief in labour and minor procedures. Long exposure can inactivate vitamin B12.",
+          "alt_answers": [
+            "N2O"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pharm-antimicrobials",
+      "name": "Antimicrobials",
+      "questions": [
+        {
+          "id": "pharm-abx-001",
+          "type": "mcq",
+          "text": "How do penicillins kill bacteria?",
+          "options": [
+            "They inhibit cell wall synthesis",
+            "They inhibit protein synthesis at the 30S ribosome",
+            "They inhibit DNA gyrase",
+            "They inhibit folate synthesis",
+            "They disrupt the cell membrane"
+          ],
+          "answer": "They inhibit cell wall synthesis",
+          "explanation": "Penicillins are beta-lactams: they bind penicillin-binding proteins and block the cross-linking of peptidoglycan, so the cell wall fails and the bacterium lyses. Aminoglycosides and tetracyclines act on the 30S ribosome, quinolones on DNA gyrase and sulfonamides on folate synthesis."
+        },
+        {
+          "id": "pharm-abx-002",
+          "type": "mcq",
+          "text": "Which pair of toxicities is characteristic of aminoglycosides such as gentamicin?",
+          "options": [
+            "Nephrotoxicity and ototoxicity",
+            "Hepatotoxicity and optic neuritis",
+            "Tendon rupture and QT prolongation",
+            "Bone marrow suppression and grey baby syndrome",
+            "Peripheral neuropathy and hepatitis"
+          ],
+          "answer": "Nephrotoxicity and ototoxicity",
+          "explanation": "Aminoglycosides accumulate in renal tubular cells and in the inner ear, so levels are monitored. Tendon rupture and QT prolongation belong to fluoroquinolones; marrow suppression and grey baby syndrome to chloramphenicol."
+        },
+        {
+          "id": "pharm-abx-003",
+          "type": "saq",
+          "text": "Which antituberculous drug turns urine and other body fluids orange-red?",
+          "answer": "Rifampicin",
+          "alt_answers": [
+            "Rifampin"
+          ],
+          "explanation": "Rifampicin (rifampin) harmlessly colours urine, tears and sweat orange-red; patients should be warned. It inhibits bacterial DNA-dependent RNA polymerase and is a strong inducer of cytochrome P450 enzymes, causing many drug interactions."
+        },
+        {
+          "id": "pharm-abx-004",
+          "type": "mcq",
+          "text": "Ciprofloxacin and other fluoroquinolones inhibit which bacterial enzyme?",
+          "options": [
+            "DNA gyrase",
+            "Transpeptidase",
+            "Dihydrofolate reductase",
+            "RNA polymerase",
+            "Beta-lactamase"
+          ],
+          "answer": "DNA gyrase",
+          "explanation": "Fluoroquinolones inhibit DNA gyrase (topoisomerase II) and topoisomerase IV, preventing DNA replication. Transpeptidase is the beta-lactam target, dihydrofolate reductase the trimethoprim target and RNA polymerase the rifampicin target."
+        },
+        {
+          "id": "pharm-abx-005",
+          "type": "saq",
+          "text": "Which vitamin is given with isoniazid to prevent peripheral neuropathy?",
+          "answer": "Pyridoxine",
+          "alt_answers": [
+            "Vitamin B6",
+            "B6",
+            "Pyridoxine (vitamin B6)"
+          ],
+          "explanation": "Isoniazid interferes with pyridoxine (vitamin B6) metabolism, and the resulting deficiency causes peripheral neuropathy. A small daily dose of pyridoxine prevents it, especially in malnourished, pregnant, diabetic or alcohol-dependent patients."
+        },
+        {
+          "id": "pharm-abx-006",
+          "type": "mcq",
+          "text": "Which antibiotic class can permanently discolour teeth and is avoided in children under 8?",
+          "options": [
+            "Tetracyclines",
+            "Macrolides",
+            "Penicillins",
+            "Cephalosporins",
+            "Aminoglycosides"
+          ],
+          "answer": "Tetracyclines",
+          "explanation": "Tetracyclines bind calcium and are deposited in growing teeth and bones, causing permanent staining and enamel defects. For the same reason they are avoided in pregnancy. Their absorption is also reduced by milk, antacids and iron."
+        },
+        {
+          "id": "pharm-abx-007",
+          "type": "saq",
+          "text": "Which antibiotic is the usual drug of choice for serious MRSA infections?",
+          "answer": "Vancomycin",
+          "explanation": "MRSA has an altered penicillin-binding protein, so it resists all standard beta-lactams. Vancomycin, a glycopeptide, blocks cell wall synthesis at a different step by binding the D-alanyl-D-alanine end of the peptidoglycan precursor."
+        },
+        {
+          "id": "pharm-abx-008",
+          "type": "mcq",
+          "text": "Metronidazole is active mainly against:",
+          "options": [
+            "Anaerobic bacteria and protozoa",
+            "Aerobic Gram-negative bacilli only",
+            "Mycobacteria",
+            "Fungi",
+            "Viruses"
+          ],
+          "answer": "Anaerobic bacteria and protozoa",
+          "explanation": "Metronidazole is activated only in organisms with anaerobic metabolism, where its reduced form damages DNA. It treats anaerobic infections, Clostridioides difficile, Trichomonas, Giardia and amoebiasis. Patients should avoid alcohol because of a disulfiram-like reaction."
+        },
+        {
+          "id": "pharm-abx-009",
+          "type": "mcq",
+          "text": "Aciclovir is used to treat infections caused by:",
+          "options": [
+            "Herpes simplex virus",
+            "Human immunodeficiency virus",
+            "Influenza virus",
+            "Hepatitis C virus",
+            "Rotavirus"
+          ],
+          "answer": "Herpes simplex virus",
+          "explanation": "Aciclovir is activated by a thymidine kinase made by herpes viruses, then blocks viral DNA polymerase. It is used for herpes simplex and varicella-zoster infections. Because uninfected cells do not activate it, it is selective and relatively safe."
+        },
+        {
+          "id": "pharm-abx-010",
+          "type": "saq",
+          "text": "Which intravenous antifungal, used for severe systemic infections, binds ergosterol and forms pores in the fungal cell membrane?",
+          "answer": "Amphotericin B",
+          "explanation": "Amphotericin B binds ergosterol in the fungal membrane and creates pores that let ions leak out, killing the cell. Its main toxicity is to the kidney, with infusion reactions also common. Azoles act differently, by blocking ergosterol synthesis.",
+          "alt_answers": [
+            "Amphotericin",
+            "Liposomal amphotericin B",
+            "Amphotericin-B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pharm-analgesics",
+      "name": "Analgesics and anti-inflammatory drugs",
+      "questions": [
+        {
+          "id": "pharm-nsaid-001",
+          "type": "mcq",
+          "text": "What is the mechanism of action of aspirin?",
+          "options": [
+            "Irreversible inhibition of cyclo-oxygenase",
+            "Reversible inhibition of cyclo-oxygenase",
+            "Inhibition of phospholipase A2",
+            "Blockade of prostaglandin receptors",
+            "Inhibition of lipoxygenase"
+          ],
+          "answer": "Irreversible inhibition of cyclo-oxygenase",
+          "explanation": "Aspirin acetylates COX-1 and COX-2 irreversibly. Platelets have no nucleus and cannot make new enzyme, so the antiplatelet effect lasts the life of the platelet (7 to 10 days). Other NSAIDs such as ibuprofen inhibit COX reversibly; corticosteroids are the drugs that reduce phospholipase A2 activity."
+        },
+        {
+          "id": "pharm-nsaid-002",
+          "type": "saq",
+          "text": "What is the antidote for paracetamol (acetaminophen) overdose?",
+          "answer": "N-acetylcysteine",
+          "alt_answers": [
+            "Acetylcysteine",
+            "NAC",
+            "N acetyl cysteine"
+          ],
+          "explanation": "In overdose the toxic metabolite NAPQI depletes hepatic glutathione and causes liver necrosis. N-acetylcysteine replenishes glutathione and is most effective when given within 8 hours of ingestion."
+        },
+        {
+          "id": "pharm-nsaid-003",
+          "type": "mcq",
+          "text": "Tolerance does NOT develop to which effect of morphine?",
+          "options": [
+            "Constipation",
+            "Analgesia",
+            "Euphoria",
+            "Respiratory depression",
+            "Sedation"
+          ],
+          "answer": "Constipation",
+          "explanation": "With repeated dosing, tolerance develops to analgesia, euphoria, sedation and respiratory depression, but not to constipation or miosis. That is why patients on long-term opioids need a regular laxative."
+        },
+        {
+          "id": "pharm-nsaid-004",
+          "type": "mcq",
+          "text": "Which is the most common serious adverse effect of long-term non-selective NSAID use?",
+          "options": [
+            "Peptic ulceration and gastrointestinal bleeding",
+            "Hepatic necrosis",
+            "Peripheral neuropathy",
+            "Pulmonary fibrosis",
+            "Hypoglycaemia"
+          ],
+          "answer": "Peptic ulceration and gastrointestinal bleeding",
+          "explanation": "Inhibiting COX-1 removes the prostaglandins that protect the gastric mucosa (mucus, bicarbonate, blood flow), leading to ulcers and bleeding. NSAIDs can also impair renal function; a proton pump inhibitor is often co-prescribed for gastric protection."
+        },
+        {
+          "id": "pharm-nsaid-005",
+          "type": "mcq",
+          "text": "Which of these drugs is a selective COX-2 inhibitor?",
+          "options": [
+            "Celecoxib",
+            "Ibuprofen",
+            "Naproxen",
+            "Indomethacin",
+            "Aspirin"
+          ],
+          "answer": "Celecoxib",
+          "explanation": "Celecoxib spares COX-1, so it causes less gastric ulceration than non-selective NSAIDs, at the cost of a higher cardiovascular risk. Ibuprofen, naproxen and indomethacin inhibit both COX-1 and COX-2."
+        },
+        {
+          "id": "pharm-nsaid-006",
+          "type": "mcq",
+          "text": "Which organ is mainly damaged in paracetamol (acetaminophen) overdose?",
+          "options": [
+            "Liver",
+            "Kidney",
+            "Heart",
+            "Lungs",
+            "Pancreas"
+          ],
+          "answer": "Liver",
+          "explanation": "In overdose the normal conjugation pathways are saturated and more paracetamol is converted to the toxic metabolite NAPQI. Once glutathione is used up, NAPQI destroys liver cells. Liver damage appears after 2 to 3 days, so early treatment with N-acetylcysteine is vital."
+        },
+        {
+          "id": "pharm-nsaid-007",
+          "type": "saq",
+          "text": "Which drug lowers uric acid in chronic gout by inhibiting xanthine oxidase?",
+          "answer": "Allopurinol",
+          "explanation": "Allopurinol inhibits xanthine oxidase, the enzyme that makes uric acid, and is the first-line drug to prevent gout attacks (febuxostat is a newer drug with the same target). It is not started during an acute attack, and it increases the toxicity of azathioprine.",
+          "alt_answers": [
+            "Febuxostat"
+          ]
+        },
+        {
+          "id": "pharm-nsaid-008",
+          "type": "mcq",
+          "text": "Aspirin is avoided in children with a viral illness because of the risk of:",
+          "options": [
+            "Reye's syndrome",
+            "Grey baby syndrome",
+            "Kernicterus",
+            "Stevens-Johnson syndrome",
+            "Red man syndrome"
+          ],
+          "answer": "Reye's syndrome",
+          "explanation": "Reye's syndrome is a rare but serious combination of liver failure and brain swelling linked to aspirin use in children with viral infections such as influenza or chickenpox. Paracetamol is used instead. Grey baby syndrome is caused by chloramphenicol and red man syndrome by vancomycin."
+        },
+        {
+          "id": "pharm-nsaid-009",
+          "type": "mcq",
+          "text": "Which of these is a weak opioid often used for moderate pain?",
+          "options": [
+            "Codeine",
+            "Morphine",
+            "Fentanyl",
+            "Naloxone",
+            "Diamorphine"
+          ],
+          "answer": "Codeine",
+          "explanation": "Codeine is a weak opioid and a prodrug: part of it is converted to morphine by CYP2D6, so its effect varies between people. Morphine, fentanyl and diamorphine are strong opioids. Naloxone is an opioid antagonist, not an analgesic."
+        },
+        {
+          "id": "pharm-nsaid-010",
+          "type": "saq",
+          "text": "Which sign in the pupils is characteristic of opioid overdose?",
+          "answer": "Pinpoint pupils",
+          "explanation": "Opioids stimulate the parasympathetic supply to the pupil, causing marked constriction (miosis). Together with a low respiratory rate and reduced consciousness it forms the classic triad of opioid overdose. Tolerance does not develop to this effect.",
+          "alt_answers": [
+            "Miosis",
+            "Constricted pupils",
+            "Pin point pupils",
+            "Small pupils",
+            "Pin-point pupils"
+          ]
+        }
+      ]
+    }
+  ]
+}

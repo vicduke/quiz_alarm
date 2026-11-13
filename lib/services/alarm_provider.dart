@@ -1,11 +1,16 @@
+/// Holds the list of alarms, keeps the system alarms in step with it and
+/// tells the UI when one starts ringing.
+library;
+
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:alarm/alarm.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/question_repository.dart';
 import '../models/models.dart';
+import 'alarm_backend.dart';
 import 'question_service.dart';
 
 /// Next time an alarm should fire, strictly after [now].
@@ -16,7 +21,13 @@ DateTime calculateNextTrigger(
   List<int> activeDays,
   DateTime now,
 ) {
-  var candidate = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+  var candidate = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    time.hour,
+    time.minute,
+  );
   if (!candidate.isAfter(now)) {
     candidate = DateTime(
       now.year,
@@ -42,7 +53,25 @@ DateTime calculateNextTrigger(
   return candidate;
 }
 
+/// "in 7 hours 5 minutes" style text for the gap between [now] and [next].
+String describeTimeUntil(DateTime next, DateTime now) {
+  final diff = next.difference(now);
+  final days = diff.inDays;
+  final hours = diff.inHours % 24;
+  final minutes = diff.inMinutes % 60;
+  if (diff.inMinutes < 1) return 'in less than a minute';
+  String unit(int n, String word) => '$n $word${n == 1 ? '' : 's'}';
+  final parts = [
+    if (days > 0) unit(days, 'day'),
+    if (hours > 0) unit(hours, 'hour'),
+    if (minutes > 0 && days == 0) unit(minutes, 'minute'),
+  ];
+  return 'in ${parts.join(' ')}';
+}
+
 class AlarmProvider extends ChangeNotifier {
+  final AlarmBackend backend;
+
   List<AlarmItem> alarms = [];
   bool isAlarmRinging = false;
 
@@ -51,117 +80,119 @@ class AlarmProvider extends ChangeNotifier {
   /// Completes once saved alarms have been read from storage.
   Future<void> get loaded => _loaded.future;
 
-  AlarmItem? _pendingRingingAlarm;
+  /// Alarms that rang while another one was on screen, or before the UI
+  /// was ready (app woken from a killed state).
+  final List<AlarmItem> _waiting = [];
   Function(AlarmItem)? _onAlarmTriggered;
-  StreamSubscription<AlarmSettings>? _ringSubscription;
+  StreamSubscription<AlarmRing>? _ringSubscription;
 
   set onAlarmTriggered(Function(AlarmItem)? callback) {
     _onAlarmTriggered = callback;
-    // Flush if an alarm woke the app from a killed state before UI mounted
-    if (_pendingRingingAlarm != null && callback != null) {
-      final alarm = _pendingRingingAlarm!;
-      _pendingRingingAlarm = null;
-      callback(alarm);
-    }
+    _showNextWaiting();
   }
 
-  AlarmProvider() {
+  AlarmProvider({AlarmBackend? backend})
+    : backend = backend ?? AlarmBackend.forPlatform() {
     _loadAlarms().then((_) => unawaited(refillQuestionBank()));
-    _listenToRingStream();
+    _ringSubscription = this.backend.rings.listen(_onRing);
   }
 
-  /// Pre-generates questions for every enabled alarm's topics so nothing
-  /// needs the network at ring time. Safe to call often; does nothing
-  /// without an API key.
+  /// Asks the AI for fresh questions on the alarms' topics when they are
+  /// running low, so nothing needs the network at ring time. Safe to call
+  /// often; does nothing without an API key.
   Future<void> refillQuestionBank() async {
     try {
       await loaded;
-      final topics = alarms
-          .where((a) => a.isEnabled)
-          .expand((a) => a.topics)
-          .toSet();
-      if (topics.isEmpty) return;
-      final added = await QuestionService.prefetch(topics);
-      if (added > 0) debugPrint('Question bank topped up with $added.');
+      if (alarms.isEmpty) return;
+      // An alarm with no topics means "any topic".
+      final selectors = alarms.any((a) => a.topics.isEmpty)
+          ? const <String>[]
+          : alarms.expand((a) => a.topics).toSet().toList();
+      final result = await QuestionService.topUp(selectors);
+      if (result.error != null) {
+        debugPrint('Question top-up failed: ${result.error}');
+      }
     } catch (e) {
-      debugPrint('Question prefetch failed: $e');
+      debugPrint('Question top-up failed: $e');
     }
   }
 
-  void _listenToRingStream() {
-    _ringSubscription = Alarm.ringStream.stream.listen((alarmSettings) async {
-      if (isAlarmRinging) return;
-      isAlarmRinging = true;
+  Future<void> _onRing(AlarmRing ring) async {
+    // On a cold start the ring event can arrive before storage is read.
+    // Wait, so we match the real alarm instead of the generic fallback.
+    await loaded;
 
-      // On a cold start the ring event can arrive before storage is read.
-      // Wait, so we match the real alarm instead of the generic fallback.
-      await loaded;
+    final matched = alarms.firstWhere(
+      (a) => a.id == ring.id,
+      orElse: () => AlarmItem(
+        id: ring.id,
+        time: TimeOfDay.now(),
+        topics: const [],
+        activeDays: const [],
+        label: ring.title,
+      ),
+    );
 
-      final matched = alarms.firstWhere(
-        (a) => a.id == alarmSettings.id,
-        orElse: () => AlarmItem(
-          id: alarmSettings.id,
-          time: TimeOfDay.now(),
-          topics: ['Pharmacology', 'General Knowledge'],
-          label: alarmSettings.notificationTitle,
-        ),
-      );
+    // A "ring once" alarm has now fired: turn it off so it can never
+    // be rescheduled for tomorrow.
+    if (matched.activeDays.isEmpty && matched.isEnabled) {
+      matched.isEnabled = false;
+      await saveAlarms();
+    }
 
-      // A "ring once" alarm has now fired: turn it off so it can never
-      // be rescheduled for tomorrow.
-      if (matched.activeDays.isEmpty && matched.isEnabled) {
-        matched.isEnabled = false;
-        await saveAlarms();
-      }
-
-      if (_onAlarmTriggered != null) {
-        _onAlarmTriggered!(matched);
-      } else {
-        _pendingRingingAlarm = matched;
-      }
-    });
+    if (!_waiting.any((a) => a.id == matched.id)) _waiting.add(matched);
+    _showNextWaiting();
   }
 
-  AlarmSettings _buildSettings(
+  void _showNextWaiting() {
+    if (isAlarmRinging || _waiting.isEmpty || _onAlarmTriggered == null) return;
+    isAlarmRinging = true;
+    _onAlarmTriggered!(_waiting.removeAt(0));
+  }
+
+  /// The ring screen calls this when it closes. Shows the next alarm if
+  /// another one started ringing meanwhile.
+  void ringScreenClosed() {
+    isAlarmRinging = false;
+    _showNextWaiting();
+  }
+
+  Future<AlarmRequest> _request(
     AlarmItem alarm,
     DateTime when, {
-    required String title,
-    required String body,
-  }) {
-    return AlarmSettings(
+    String? title,
+    String? body,
+  }) async {
+    final name = alarm.label.isEmpty ? 'Quiz Alarm' : alarm.label;
+    var topics = 'your topics';
+    try {
+      topics = await QuestionRepository.describeSelection(alarm.topics);
+    } catch (_) {}
+    return AlarmRequest(
       id: alarm.id,
       dateTime: when,
-      assetAudioPath: alarm.audioPath,
-      loopAudio: true,
+      audioPath: alarm.audioPath,
       vibrate: alarm.vibrate,
       volume: alarm.volume,
       fadeDuration: alarm.fadeDuration,
-      notificationTitle: title,
-      notificationBody: body,
-      enableNotificationOnKill: true,
-      androidFullScreenIntent: true,
+      title: title ?? name,
+      body:
+          body ??
+          'Answer ${alarm.requiredStreak} in a row ($topics) to dismiss!',
     );
   }
 
   Future<void> _scheduleNativeAlarm(AlarmItem alarm) async {
     if (!alarm.isEnabled) {
-      await Alarm.stop(alarm.id);
+      await backend.stop(alarm.id);
       return;
     }
-
     final next = calculateNextTrigger(
       alarm.time,
       alarm.activeDays,
       DateTime.now(),
     );
-    await Alarm.set(
-      alarmSettings: _buildSettings(
-        alarm,
-        next,
-        title: alarm.label.isEmpty ? 'Quiz Alarm' : alarm.label,
-        body: 'Solve 2 questions (${alarm.topics.join(", ")}) to dismiss!',
-      ),
-    );
+    await backend.set(await _request(alarm, next));
   }
 
   Future<void> addAlarm(AlarmItem alarm) async {
@@ -185,13 +216,12 @@ class AlarmProvider extends ChangeNotifier {
 
   Future<void> deleteAlarm(int id) async {
     alarms.removeWhere((a) => a.id == id);
-    await Alarm.stop(id);
+    await backend.stop(id);
     await saveAlarms();
   }
 
   Future<void> dismissAlarm(AlarmItem alarm) async {
-    await Alarm.stop(alarm.id);
-    isAlarmRinging = false;
+    await backend.stop(alarm.id);
     // Automatically schedule next occurrence if repeating days are active
     if (alarm.isEnabled && alarm.activeDays.isNotEmpty) {
       await _scheduleNativeAlarm(alarm);
@@ -202,47 +232,73 @@ class AlarmProvider extends ChangeNotifier {
     unawaited(refillQuestionBank());
   }
 
-  Future<void> snoozeAlarm(AlarmItem alarm, {int minutes = 5}) async {
-    await Alarm.stop(alarm.id);
-    isAlarmRinging = false;
-
-    await Alarm.set(
-      alarmSettings: _buildSettings(
+  /// Silences [alarm] and rings it again after its own snooze length.
+  Future<void> snoozeAlarm(AlarmItem alarm) async {
+    await backend.set(
+      await _request(
         alarm,
-        DateTime.now().add(Duration(minutes: minutes)),
+        DateTime.now().add(Duration(minutes: alarm.snoozeMinutes)),
         title: '${alarm.label} (Snoozed)',
-        body: 'Mercy snooze ended! Answer 2 questions to dismiss.',
+        body:
+            'Snooze ended! Answer ${alarm.requiredStreak} in a row to dismiss.',
       ),
     );
+  }
+
+  /// Makes [alarm] ring [after] from now without changing its schedule
+  /// permanently (used by the simulator's "Ring now" button).
+  Future<void> ringSoon(
+    AlarmItem alarm, {
+    Duration after = const Duration(seconds: 3),
+  }) async {
+    await backend.set(await _request(alarm, DateTime.now().add(after)));
   }
 
   Future<void> _loadAlarms() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('saved_alarms');
-      if (raw != null) {
-        final loadedAlarms = <AlarmItem>[];
-        try {
-          for (final e in jsonDecode(raw) as List) {
-            try {
-              loadedAlarms.add(AlarmItem.fromJson(e as Map<String, dynamic>));
-            } catch (err) {
-              debugPrint('Skipping unreadable alarm: $err');
-            }
-          }
-        } catch (err) {
-          debugPrint('Saved alarms unreadable: $err');
-        }
-        alarms = loadedAlarms;
+      if (raw == null) return;
 
-        // Re-register repeating alarms only. "Ring once" alarms are already
-        // registered natively; rescheduling here would push a one that was
-        // missed or already fired to tomorrow.
-        for (final a in alarms) {
-          if (a.isEnabled && a.activeDays.isNotEmpty) {
+      final loadedAlarms = <AlarmItem>[];
+      try {
+        for (final e in jsonDecode(raw) as List) {
+          try {
+            loadedAlarms.add(AlarmItem.fromJson(e as Map<String, dynamic>));
+          } catch (err) {
+            debugPrint('Skipping unreadable alarm: $err');
+          }
+        }
+      } catch (err) {
+        debugPrint('Saved alarms unreadable: $err');
+      }
+      alarms = loadedAlarms;
+
+      var changed = false;
+      final now = DateTime.now();
+      for (final a in alarms.where((a) => a.isEnabled)) {
+        try {
+          // Registering an alarm again silences it if it is ringing and
+          // wipes a pending snooze, so leave those two cases alone.
+          if (await backend.isRinging(a.id)) continue;
+          final registered = backend.scheduledTime(a.id);
+          if (registered != null && registered.isAfter(now)) continue;
+
+          if (a.activeDays.isEmpty) {
+            // A "ring once" alarm that is no longer registered has fired
+            // or was missed. Rescheduling would push it to tomorrow.
+            a.isEnabled = false;
+            changed = true;
+          } else {
             await _scheduleNativeAlarm(a);
           }
+        } catch (err) {
+          debugPrint('Could not restore alarm ${a.id}: $err');
         }
+      }
+      if (changed) {
+        await saveAlarms();
+      } else {
         notifyListeners();
       }
     } finally {

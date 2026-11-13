@@ -26,9 +26,14 @@ class _ShakeWidgetState extends State<ShakeWidget>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    Tween<double>(begin: 0, end: 24).animate(
-      CurvedAnimation(parent: _controller, curve: const ElasticInCurve(0.4)),
-    ).addListener(() => setState(() {}));
+    Tween<double>(begin: 0, end: 24)
+        .animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const ElasticInCurve(0.4),
+          ),
+        )
+        .addListener(() => setState(() {}));
     widget.shakeStream.listen((_) {
       if (mounted) _controller.forward(from: 0.0);
     });

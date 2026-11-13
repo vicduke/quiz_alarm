@@ -1,4 +1,4 @@
-Miscellaneous
+# Miscellaneous
 
 *.class
 *.log
@@ -11,18 +11,18 @@ Miscellaneous
 .svn/
 *~
 
-IntelliJ related
+# IntelliJ related
 
 *.iml
 *.ipr
 *.iws
 .idea/
 
-Visual Studio Code workspace settings
+# Visual Studio Code workspace settings
 
 .vscode/
 
-Flutter/Dart/Pub related
+# Flutter/Dart/Pub related
 
 /doc/api/
 /ios/Flutter/.last_build_id
@@ -34,19 +34,18 @@ Flutter/Dart/Pub related
 .pub/
 /build/
 
-Web related
+# Web related
 
-lib/generated_plugin_registrant.dart
 
-Symbolication related
+# Symbolication related
 
 app.*.symbols
 
-Obfuscation related
+# Obfuscation related
 
 app.*.map.json
 
-Android Studio and Gradle build artifacts
+# Android Studio and Gradle build artifacts
 
 /android/app/debug
 /android/app/profile
@@ -58,6 +57,10 @@ Android Studio and Gradle build artifacts
 /android/build/
 /android/local.properties
 
-Exceptions to above rules.
+# Exceptions to above rules.
 
 !/packages/flutter_tools/test/data/dart_dependencies_test//.packages
+
+# Mini emulator browser profile and AI-context dumps
+tool/emulator/.profile/
+repomix-output.xml
