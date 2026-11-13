@@ -8,6 +8,7 @@
 //   tapxy:200,300   tap a point (phone is 412 x 892)
 //   type:Text       type into the focused field
 //   key:Enter       press a key
+//   scroll:600      scroll down by that many pixels (negative = up)
 //   wait:1500       wait in milliseconds
 //   shot:name.png   save a screenshot
 //   reload          restart the app (like killing and reopening it)
@@ -120,6 +121,10 @@ const { chromium } = require('playwright');
     } else if (cmd === 'key') {
       await page.keyboard.press(arg);
       await page.waitForTimeout(500);
+    } else if (cmd === 'scroll') {
+      await page.mouse.move(206, 450);
+      await page.mouse.wheel(0, Number(arg));
+      await page.waitForTimeout(600);
     } else if (cmd === 'wait') {
       await page.waitForTimeout(Number(arg));
     } else if (cmd === 'shot') {
@@ -136,6 +141,17 @@ const { chromium } = require('playwright');
       if (q.type === 'mcq') {
         await tapLabel(right ? q.answer : q.options.find((o) => o !== q.answer));
       } else {
+        // Put the cursor in the answer field first (it is not always focused).
+        const field = await page.evaluate(() => {
+          const e = document.querySelector('flt-semantics input, flt-semantics textarea, flt-semantics[role="textbox"], input.flt-text-editing, textarea.flt-text-editing');
+          if (!e) return null;
+          const r = e.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        });
+        if (field) {
+          await page.mouse.click(field.x, field.y);
+          await page.waitForTimeout(300);
+        }
         await page.keyboard.type(right ? q.answer : 'wrong answer', { delay: 15 });
         await page.keyboard.press('Enter');
       }

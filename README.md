@@ -13,6 +13,8 @@ up to 15); 5 wrong in a row unlocks a snooze of 3, 5 or 10 minutes (the
 | **Question Banks** | Units -> topics with progress. Practise a topic offline: after each answer you get the correct answer and a stored explanation. "Generate with AI" adds more questions. |
 | **Free Revision** | Flash cards over random or chosen topics. With a Gemini key, the AI tutor explains where your answer went wrong; offline it falls back to the stored explanation. |
 
+| **Reports** | Totals, a 14-day chart, accuracy per topic, average time and number of questions it takes to dismiss an alarm, and the history of every alarm and practice session. Tap a session to see each question, what you answered, the correct answer and the explanation. |
+
 Settings holds the theme, the Gemini API key / model, and the status of AI
 question generation (with the real error if it fails).
 
@@ -22,7 +24,7 @@ question generation (with the real error if it fails).
 lib/
   main.dart                 providers + theme
   models/models.dart        StudyUnit, Topic, Question, AlarmItem
-  data/app_database.dart    SQLite schema (units, topics, questions, attempts, meta)
+  data/app_database.dart    SQLite schema (units, topics, questions, attempts, sessions, meta)
   data/question_repository.dart   all queries, seed import, question selection
   services/alarm_backend.dart     native alarms (alarm plugin) or simulated ones
   services/alarm_provider.dart    alarm list, scheduling, ring handling
@@ -56,7 +58,7 @@ Banks ship as JSON in `assets/question_banks/`, one file per unit:
           "id": "pharm-abx-001",
           "type": "mcq",
           "text": "How do penicillins kill bacteria?",
-          "options": ["They inhibit cell wall synthesis", "...", "...", "..."],
+          "options": ["They inhibit cell wall synthesis", "...", "...", "...", "..."],
           "answer": "They inhibit cell wall synthesis",
           "explanation": "Penicillins are beta-lactams ..."
         },
@@ -80,7 +82,7 @@ To change or add content: edit the file (or add a new `<unit>.json`) and
 the user added are never removed by a re-import.
 
 `pharmacology.json` currently holds **starter test data** (6 placeholder
-subtopics, 30 questions).
+subtopics, 60 questions). Multiple-choice questions have exactly 5 options.
 
 ## Running
 

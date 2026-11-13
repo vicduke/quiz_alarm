@@ -162,12 +162,12 @@ void main() {
 
     test('accepts a valid MCQ and keeps the right answer after shuffling', () {
       final q = QuestionService.validateGenerated(
-        mcq(['A1', 'B2', 'C3', 'D4'], 'c3'),
+        mcq(['A1', 'B2', 'C3', 'D4', 'E5'], 'c3'),
         topic,
         rng: Random(1),
       );
       expect(q, isNotNull);
-      expect(q!.options.toSet(), {'A1', 'B2', 'C3', 'D4'});
+      expect(q!.options.toSet(), {'A1', 'B2', 'C3', 'D4', 'E5'});
       expect(q.correctAnswer, 'C3');
       expect(q.topicId, 't1');
       expect(q.explanation, 'Because.');
@@ -177,7 +177,7 @@ void main() {
     test('rejects an answer that is not among the options', () {
       expect(
         QuestionService.validateGenerated(
-          mcq(['A', 'B', 'C', 'D'], 'E'),
+          mcq(['A', 'B', 'C', 'D', 'E'], 'F'),
           topic,
         ),
         isNull,
@@ -186,12 +186,15 @@ void main() {
 
     test('rejects the wrong number of options or duplicates', () {
       expect(
-        QuestionService.validateGenerated(mcq(['A', 'B', 'C'], 'A'), topic),
+        QuestionService.validateGenerated(
+          mcq(['A', 'B', 'C', 'D'], 'A'),
+          topic,
+        ),
         isNull,
       );
       expect(
         QuestionService.validateGenerated(
-          mcq(['A', 'a', 'C', 'D'], 'A'),
+          mcq(['A', 'a', 'C', 'D', 'E'], 'A'),
           topic,
         ),
         isNull,

@@ -55,6 +55,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
   String? _aiText;
   String? _aiError;
 
+  // Saved for the Reports tab; created on the first answer so that
+  // opening and closing a session leaves nothing behind.
+  Future<int?>? _session;
+  int? _sessionId;
+  final Stopwatch _timer = Stopwatch();
+
   int _answered = 0;
   int _correct = 0;
 
@@ -70,6 +76,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
   @override
   void dispose() {
     _answerCtrl.dispose();
+    QuestionRepository.endSession(
+      _sessionId,
+      'finished',
+    ).then((_) => QuestionService.changes.value++);
     super.dispose();
   }
 
@@ -90,6 +100,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
       _phase = q == null ? _Phase.empty : _Phase.asking;
     });
     if (q != null) _shown.add(q.id);
+    _timer
+      ..reset()
+      ..start();
   }
 
   /// [answer] empty = "I don't know".
@@ -97,6 +110,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final q = _question;
     if (q == null || _phase != _Phase.asking) return;
     FocusScope.of(context).unfocus();
+    _timer.stop();
+    final taken = _timer.elapsed;
     final useAi = widget.aiTutor && _hasKey;
     final certain = QuestionService.certainVerdict(q, answer);
 
@@ -127,10 +142,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
       _answered++;
       if (verdict) _correct++;
     });
+    _session ??= QuestionRepository.startSession(widget.mode, widget.title);
+    _sessionId = await _session;
     await QuestionRepository.recordAttempt(
       q.id,
       correct: verdict,
       mode: widget.mode,
+      sessionId: _sessionId,
+      userAnswer: answer,
+      timeTaken: taken,
     );
     QuestionService.changes.value++;
 

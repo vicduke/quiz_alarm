@@ -424,6 +424,9 @@ class QuestionRepository {
     String questionId, {
     required bool correct,
     required String mode,
+    int? sessionId,
+    String userAnswer = '',
+    Duration? timeTaken,
   }) async {
     try {
       await (await _db).insert('attempts', {
@@ -431,6 +434,9 @@ class QuestionRepository {
         'mode': mode,
         'correct': correct ? 1 : 0,
         'answered_at': DateTime.now().millisecondsSinceEpoch,
+        'session_id': sessionId,
+        'user_answer': userAnswer.trim(),
+        'duration_ms': timeTaken?.inMilliseconds,
       });
     } catch (e) {
       debugPrint('Could not record the answer: $e');
@@ -489,7 +495,8 @@ class QuestionRepository {
     if (rows.isEmpty) return null;
 
     var pool = rows.where((r) => !exclude.contains(r['id'])).toList();
-    if (pool.isEmpty) pool = rows;
+    // (query results are read-only, hence the copy before sorting below)
+    if (pool.isEmpty) pool = List.of(rows);
 
     final random = rng ?? Random();
     final unseen = pool.where((r) => r['last_at'] == null).toList();
@@ -506,5 +513,189 @@ class QuestionRepository {
     final oldest = tier.take(min(5, tier.length)).toList();
     return Question.fromRow(oldest[random.nextInt(oldest.length)])
         .shuffled(random);
+  }
+
+  // -------------------------------------------------- sessions and reports
+
+  /// Starts a session ('alarm', 'revision' or 'bank') and returns its id,
+  /// or null if it could not be saved (the quiz must go on regardless).
+  static Future<int?> startSession(
+    String kind,
+    String title, {
+    int? alarmId,
+    int? requiredStreak,
+  }) async {
+    try {
+      await ensureReady();
+      return await (await _db).insert('sessions', {
+        'kind': kind,
+        'title': title,
+        'alarm_id': alarmId,
+        'required_streak': requiredStreak,
+        'started_at': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      debugPrint('Could not start a session: $e');
+      return null;
+    }
+  }
+
+  /// Closes a session. One in which nothing was answered is removed.
+  static Future<void> endSession(int? id, String outcome) async {
+    if (id == null) return;
+    try {
+      final db = await _db;
+      final n = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM attempts WHERE session_id = ?',
+          [id],
+        ),
+      );
+      if ((n ?? 0) == 0 && outcome != 'dismissed' && outcome != 'snoozed') {
+        await db.delete('sessions', where: 'id = ?', whereArgs: [id]);
+        return;
+      }
+      await db.update(
+        'sessions',
+        {'ended_at': DateTime.now().millisecondsSinceEpoch, 'outcome': outcome},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      debugPrint('Could not close the session: $e');
+    }
+  }
+
+  static DateTime _time(Object? ms) =>
+      DateTime.fromMillisecondsSinceEpoch(ms as int);
+
+  /// Past sessions, newest first. [kind] filters to one kind.
+  static Future<List<StudySession>> getSessions({
+    String? kind,
+    int limit = 100,
+  }) async {
+    await ensureReady();
+    final rows = await (await _db).rawQuery(
+      'SELECT s.*, COUNT(a.id) AS questions, '
+      'COALESCE(SUM(a.correct), 0) AS correct_count '
+      'FROM sessions s LEFT JOIN attempts a ON a.session_id = s.id '
+      '${kind == null ? '' : 'WHERE s.kind = ? '}'
+      'GROUP BY s.id ORDER BY s.started_at DESC LIMIT ?',
+      [?kind, limit],
+    );
+    return rows
+        .map(
+          (r) => StudySession(
+            id: r['id'] as int,
+            kind: r['kind'] as String,
+            title: r['title'] as String,
+            startedAt: _time(r['started_at']),
+            endedAt: r['ended_at'] == null ? null : _time(r['ended_at']),
+            outcome: r['outcome'] as String?,
+            requiredStreak: r['required_streak'] as int?,
+            questions: (r['questions'] as int?) ?? 0,
+            correct: (r['correct_count'] as int?) ?? 0,
+          ),
+        )
+        .toList();
+  }
+
+  /// Every question answered in a session, in order, with what the user
+  /// answered. The question (and so its explanation) comes from the
+  /// database, so this works offline.
+  static Future<List<AttemptDetail>> getSessionAttempts(int sessionId) async {
+    final rows = await (await _db).rawQuery(
+      'SELECT q.*, t.name AS topic_name, a.user_answer AS a_user_answer, '
+      'a.correct AS a_correct, a.duration_ms AS a_duration_ms, '
+      'a.answered_at AS a_answered_at FROM attempts a '
+      'JOIN questions q ON q.id = a.question_id '
+      'JOIN topics t ON t.id = q.topic_id '
+      'WHERE a.session_id = ? ORDER BY a.id',
+      [sessionId],
+    );
+    return rows
+        .map(
+          (r) => AttemptDetail(
+            question: Question.fromRow(r),
+            userAnswer: (r['a_user_answer'] ?? '') as String,
+            correct: r['a_correct'] == 1,
+            answeredAt: _time(r['a_answered_at']),
+            timeTaken: r['a_duration_ms'] == null
+                ? null
+                : Duration(milliseconds: r['a_duration_ms'] as int),
+          ),
+        )
+        .toList();
+  }
+
+  /// Totals, the last [days] days and per-topic accuracy for the Reports
+  /// tab. [now] is only passed by tests.
+  static Future<ReportSummary> getReport({int days = 14, DateTime? now}) async {
+    await ensureReady();
+    final db = await _db;
+    final today = now ?? DateTime.now();
+    final firstDay = DateTime(today.year, today.month, today.day - (days - 1));
+
+    final totals = (await db.rawQuery(
+      'SELECT COUNT(*) AS n, COALESCE(SUM(correct), 0) AS c FROM attempts',
+    )).first;
+
+    final recent = await db.rawQuery(
+      'SELECT answered_at, correct FROM attempts WHERE answered_at >= ?',
+      [firstDay.millisecondsSinceEpoch],
+    );
+    final answered = List<int>.filled(days, 0);
+    final correct = List<int>.filled(days, 0);
+    for (final r in recent) {
+      final t = _time(r['answered_at']);
+      final i = DateTime(t.year, t.month, t.day).difference(firstDay).inHours;
+      final index = (i / 24).round();
+      if (index < 0 || index >= days) continue;
+      answered[index]++;
+      if (r['correct'] == 1) correct[index]++;
+    }
+
+    final topicRows = await db.rawQuery(
+      'SELECT t.name AS name, COUNT(*) AS n, SUM(a.correct) AS c '
+      'FROM attempts a JOIN questions q ON q.id = a.question_id '
+      'JOIN topics t ON t.id = q.topic_id GROUP BY t.id',
+    );
+    final topics =
+        topicRows
+            .map(
+              (r) => TopicAccuracy(
+                r['name'] as String,
+                (r['n'] as int?) ?? 0,
+                (r['c'] as int?) ?? 0,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => a.accuracy.compareTo(b.accuracy));
+
+    final wake = (await db.rawQuery(
+      "SELECT COUNT(*) AS n, AVG(ended_at - started_at) AS ms, "
+      "AVG((SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id)) AS q "
+      "FROM sessions s WHERE kind = 'alarm' AND outcome = 'dismissed'",
+    )).first;
+    final dismissed = (wake['n'] as int?) ?? 0;
+
+    return ReportSummary(
+      answered: (totals['n'] as int?) ?? 0,
+      correct: (totals['c'] as int?) ?? 0,
+      alarmsDismissed: dismissed,
+      avgWakeTime: dismissed == 0
+          ? null
+          : Duration(milliseconds: (wake['ms'] as num).round()),
+      avgWakeQuestions: dismissed == 0 ? null : (wake['q'] as num).toDouble(),
+      days: [
+        for (var i = 0; i < days; i++)
+          DayStat(
+            DateTime(firstDay.year, firstDay.month, firstDay.day + i),
+            answered[i],
+            correct[i],
+          ),
+      ],
+      topics: topics,
+    );
   }
 }

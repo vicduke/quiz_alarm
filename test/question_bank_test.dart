@@ -49,12 +49,12 @@ void main() {
           expect(q.explanation, isNotEmpty, reason: q.id);
           expect(q.topic, t.name);
           if (q.type == QuestionType.mcq) {
-            expect(q.options.length, 4, reason: q.id);
+            expect(q.options.length, 5, reason: q.id);
             expect(q.options, contains(q.correctAnswer), reason: q.id);
           }
         }
       }
-      expect(total, greaterThanOrEqualTo(30));
+      expect(total, greaterThanOrEqualTo(60));
     });
 
     test('old alarm topic names still resolve', () async {
@@ -234,7 +234,13 @@ void main() {
       {
         'type': 'mcq',
         'questionText': 'Which drug treats MRSA?',
-        'options': ['Vancomycin', 'Amoxicillin', 'Cefalexin', 'Flucloxacillin'],
+        'options': [
+          'Vancomycin',
+          'Amoxicillin',
+          'Cefalexin',
+          'Flucloxacillin',
+          'Penicillin V',
+        ],
         'correctAnswer': 'Vancomycin',
         'explanation': 'Vancomycin is active against MRSA.',
       },
@@ -325,10 +331,10 @@ void main() {
             ],
           }),
         );
-        // Every seed topic has 5 unseen questions: nothing to do at target 5.
+        // Every seed topic has 10 unseen questions: nothing to do at target 5.
         expect((await QuestionService.topUp(const [])).added, 0);
         // With a higher target, at most two topics are filled per run.
-        final r = await QuestionService.topUp(const [], targetUnseen: 6);
+        final r = await QuestionService.topUp(const [], targetUnseen: 11);
         expect(r.added, 2);
         expect(await QuestionService.lastStatus(), contains('Added 2'));
       },

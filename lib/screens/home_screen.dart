@@ -13,6 +13,7 @@ import 'settings_screen.dart';
 import 'tabs/alarm_tab.dart';
 import 'tabs/free_revision_tab.dart';
 import 'tabs/question_bank_tab.dart';
+import 'tabs/reports_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     AlarmTab(),
     QuestionBankTab(),
     FreeRevisionTab(),
+    ReportsTab(),
   ];
 
   @override
@@ -111,12 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.alarm), label: 'Alarms'),
           NavigationDestination(
             icon: Icon(Icons.library_books),
-            label: 'Question Banks',
+            label: 'Banks',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.school),
-            label: 'Free Revision',
-          ),
+          NavigationDestination(icon: Icon(Icons.school), label: 'Revision'),
+          NavigationDestination(icon: Icon(Icons.insights), label: 'Reports'),
         ],
       ),
     );

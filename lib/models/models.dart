@@ -132,6 +132,96 @@ class Question {
   }
 }
 
+/// One alarm ring or practice session, for the reports.
+class StudySession {
+  final int id;
+
+  /// 'alarm', 'revision' or 'bank'.
+  final String kind;
+  final String title;
+  final DateTime startedAt;
+  final DateTime? endedAt;
+
+  /// 'dismissed', 'snoozed', 'finished', or null if it was cut short.
+  final String? outcome;
+  final int? requiredStreak;
+  final int questions;
+  final int correct;
+
+  const StudySession({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.startedAt,
+    this.endedAt,
+    this.outcome,
+    this.requiredStreak,
+    this.questions = 0,
+    this.correct = 0,
+  });
+
+  Duration? get duration => endedAt?.difference(startedAt);
+}
+
+/// One answered question inside a session.
+class AttemptDetail {
+  final Question question;
+  final String userAnswer;
+  final bool correct;
+  final Duration? timeTaken;
+  final DateTime answeredAt;
+
+  const AttemptDetail({
+    required this.question,
+    required this.userAnswer,
+    required this.correct,
+    required this.answeredAt,
+    this.timeTaken,
+  });
+}
+
+/// Answers given on one calendar day.
+class DayStat {
+  final DateTime day;
+  final int answered;
+  final int correct;
+  const DayStat(this.day, this.answered, this.correct);
+}
+
+/// All-time accuracy on one topic.
+class TopicAccuracy {
+  final String topic;
+  final int answered;
+  final int correct;
+  const TopicAccuracy(this.topic, this.answered, this.correct);
+  double get accuracy => answered == 0 ? 0 : correct / answered;
+}
+
+/// The numbers at the top of the Reports tab.
+class ReportSummary {
+  final int answered;
+  final int correct;
+  final int alarmsDismissed;
+
+  /// Average time from the alarm ringing to it being dismissed.
+  final Duration? avgWakeTime;
+
+  /// Average number of questions it took to dismiss an alarm.
+  final double? avgWakeQuestions;
+  final List<DayStat> days;
+  final List<TopicAccuracy> topics;
+
+  const ReportSummary({
+    this.answered = 0,
+    this.correct = 0,
+    this.alarmsDismissed = 0,
+    this.avgWakeTime,
+    this.avgWakeQuestions,
+    this.days = const [],
+    this.topics = const [],
+  });
+}
+
 class AlarmItem {
   final int id; // 32-bit integer required by native Android AlarmManager
   TimeOfDay time;

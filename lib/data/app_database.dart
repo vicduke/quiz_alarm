@@ -5,8 +5,11 @@
 /// - `topics`     subtopics of a unit
 /// - `questions`  questions with their answer AND explanation, so the
 ///                bank works fully offline
-/// - `attempts`   every answer the user gave (drives "not asked yet",
-///                progress and weak-question selection)
+/// - `attempts`   every answer the user gave, with what they answered and
+///                how long it took (drives "not asked yet", progress,
+///                weak-question selection and the reports)
+/// - `sessions`   one row per alarm ring or practice session, so the
+///                reports can show history and time-to-wake
 /// - `meta`       small key/value store (seed versions)
 library;
 
@@ -15,7 +18,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
   static const String fileName = 'brainwake.db';
 
   static Database? _db;
@@ -46,6 +49,7 @@ class AppDatabase {
         version: schemaVersion,
         onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: (db, _) => _create(db),
+        onUpgrade: _upgrade,
       ),
     );
     _db = db;
@@ -92,8 +96,12 @@ class AppDatabase {
         question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
         mode TEXT NOT NULL,
         correct INTEGER NOT NULL,
-        answered_at INTEGER NOT NULL
+        answered_at INTEGER NOT NULL,
+        session_id INTEGER REFERENCES sessions(id) ON DELETE SET NULL,
+        user_answer TEXT NOT NULL DEFAULT '',
+        duration_ms INTEGER
       )''');
+    batch.execute(_createSessions);
     batch.execute(
       'CREATE INDEX idx_attempts_question ON attempts(question_id)',
     );
@@ -101,6 +109,33 @@ class AppDatabase {
       'CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)',
     );
     await batch.commit(noResult: true);
+  }
+
+  static const String _createSessions = '''
+    CREATE TABLE sessions(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      alarm_id INTEGER,
+      required_streak INTEGER,
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER,
+      outcome TEXT
+    )''';
+
+  /// Brings an older database up to date without losing anything.
+  static Future<void> _upgrade(Database db, int from, int to) async {
+    if (from < 2) {
+      await db.execute(_createSessions);
+      await db.execute(
+        'ALTER TABLE attempts ADD COLUMN session_id INTEGER '
+        'REFERENCES sessions(id) ON DELETE SET NULL',
+      );
+      await db.execute(
+        "ALTER TABLE attempts ADD COLUMN user_answer TEXT NOT NULL DEFAULT ''",
+      );
+      await db.execute('ALTER TABLE attempts ADD COLUMN duration_ms INTEGER');
+    }
   }
 
   /// Closes the database (tests use this between cases).
