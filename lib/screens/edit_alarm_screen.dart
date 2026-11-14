@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/alarm_provider.dart';
 import '../services/bank_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/topic_picker.dart';
 
 class EditAlarmScreen extends StatefulWidget {
@@ -505,12 +506,14 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                 textTheme: CupertinoTextThemeData(
                   dateTimePickerTextStyle: TextStyle(
                     color: scheme.onSurface,
-                    fontSize: 24,
+                    fontSize: 26,
+                    fontFamily: AppTheme.display,
                   ),
                 ),
               ),
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.time,
+                use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat,
                 initialDateTime: DateTime(
                   2020,
                   1,
@@ -589,7 +592,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
                     controller: _labelCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Alarm name',
+                      filled: false,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
                 ),

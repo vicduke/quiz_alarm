@@ -133,14 +133,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          SwitchListTile(
-            title: const Text('Dark Theme'),
-            secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
-            value: isDark,
-            onChanged: (v) => themeProvider.toggleTheme(v),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Dark Theme'),
+                  secondary: Icon(
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  ),
+                  value: isDark,
+                  onChanged: (v) => themeProvider.toggleTheme(v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                SwitchListTile(
+                  title: const Text('24-hour clock'),
+                  subtitle: Text(
+                    themeProvider.use24Hour
+                        ? 'Times show as 18:30'
+                        : 'Times show as 6:30 PM',
+                  ),
+                  secondary: const Icon(Icons.schedule_rounded),
+                  value: themeProvider.use24Hour,
+                  onChanged: (v) => themeProvider.setUse24Hour(v),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                const ListTile(
+                  leading: Icon(Icons.volume_up_rounded),
+                  title: Text('Alarm volume'),
+                  subtitle: Text(
+                    'Always the maximum. The phone volume is raised when an '
+                    'alarm rings and put back when you dismiss it.',
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Text(
             'Gemini API key',
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -154,10 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _keyController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Enter API Key',
-            ),
+            decoration: const InputDecoration(hintText: 'Enter API Key'),
             obscureText: true,
           ),
           const SizedBox(height: 16),
@@ -166,7 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextField(
             controller: _modelController,
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               hintText: GeminiClient.defaultModel,
               helperText: 'If a test fails with "not found", try a newer Gemini Flash model name.',
               helperMaxLines: 2,

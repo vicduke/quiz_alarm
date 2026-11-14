@@ -6,6 +6,7 @@ import 'package:quiz_alarm/models/models.dart';
 import 'package:quiz_alarm/services/alarm_provider.dart';
 import 'package:quiz_alarm/services/gemini_client.dart';
 import 'package:quiz_alarm/services/question_service.dart';
+import 'package:quiz_alarm/services/theme_provider.dart';
 
 void main() {
   group('calculateNextTrigger', () {
@@ -51,6 +52,20 @@ void main() {
         DateTime(2026, 11, 20, 10, 0),
       );
     });
+  });
+
+  test('formatClock follows the 12 / 24 hour setting', () {
+    final evening = DateTime(2026, 11, 13, 18, 5);
+    expect(formatClock(evening, use24Hour: true), '18:05');
+    expect(formatClock(evening, use24Hour: false), '6:05 PM');
+    expect(
+      formatTimeOfDay(const TimeOfDay(hour: 0, minute: 30), use24Hour: true),
+      '00:30',
+    );
+    expect(
+      formatTimeOfDay(const TimeOfDay(hour: 0, minute: 30), use24Hour: false),
+      '12:30 AM',
+    );
   });
 
   group('describeTimeUntil', () {

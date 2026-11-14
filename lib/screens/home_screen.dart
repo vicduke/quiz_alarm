@@ -1,5 +1,5 @@
-/// The three tabs, plus the hook that opens the ring screen when an alarm
-/// goes off.
+/// The app shell: glowing background, header, the four tabs in a floating
+/// navigation bar, and the hook that opens the quiz when an alarm rings.
 library;
 
 import 'package:material_ui/material_ui.dart';
@@ -8,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/alarm_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 import 'alarm_ring_screen.dart';
 import 'settings_screen.dart';
 import 'tabs/alarm_tab.dart';
@@ -28,6 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
     QuestionBankTab(),
     FreeRevisionTab(),
     ReportsTab(),
+  ];
+  static const List<String> _titles = [
+    'BrainWake',
+    'Question banks',
+    'Revision',
+    'Reports',
   ];
 
   @override
@@ -51,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Snoozed for ${alarm.snoozeMinutes} minutes.'),
-              backgroundColor: Colors.orange,
             ),
           );
         }
@@ -88,36 +95,102 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final title = Text(_titles[_currentIndex]);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'BrainWake',
-          style: TextStyle(fontWeight: FontWeight.bold),
+      extendBody: true,
+      body: GlowBackground(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 10, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DefaultTextStyle.merge(
+                        style: const TextStyle(
+                          fontFamily: AppTheme.display,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                        // The app name wears the dawn gradient.
+                        child: _currentIndex == 0
+                            ? ShaderMask(
+                                blendMode: BlendMode.srcIn,
+                                shaderCallback: (r) =>
+                                    AppColors.dawn.createShader(r),
+                                child: title,
+                              )
+                            : DefaultTextStyle.merge(
+                                style: TextStyle(color: scheme.onSurface),
+                                child: title,
+                              ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Settings',
+                      icon: const Icon(Icons.tune_rounded),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: _tabs[_currentIndex]),
+            ],
+          ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
-          ),
-        ],
       ),
-      body: _tabs[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.alarm), label: 'Alarms'),
-          NavigationDestination(
-            icon: Icon(Icons.library_books),
-            label: 'Banks',
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: scheme.outlineVariant),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.45 : 0.10,
+                ),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          NavigationDestination(icon: Icon(Icons.school), label: 'Revision'),
-          NavigationDestination(icon: Icon(Icons.insights), label: 'Reports'),
-        ],
+          clipBehavior: Clip.antiAlias,
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (i) => setState(() => _currentIndex = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.alarm_rounded),
+                label: 'Alarms',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.auto_stories_rounded),
+                label: 'Banks',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.style_rounded),
+                label: 'Revision',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.insights_rounded),
+                label: 'Reports',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

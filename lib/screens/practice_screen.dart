@@ -14,6 +14,8 @@ import '../data/question_repository.dart';
 import '../models/models.dart';
 import '../services/gemini_client.dart';
 import '../services/question_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 
 class PracticeScreen extends StatefulWidget {
   final String title;
@@ -282,7 +284,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       Text(
                         q.questionText,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontFamily: AppTheme.display,
+                          height: 1.25,
+                          fontSize: 22,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -298,10 +302,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   controller: _answerCtrl,
                   enabled: _phase == _Phase.asking,
                   textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Your answer',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Your answer'),
                   onSubmitted: (v) {
                     if (v.trim().isNotEmpty) _submit(v);
                   },
@@ -324,12 +325,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: answered
-              ? FilledButton.icon(
-                  onPressed: _next,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next question'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
+              ? SizedBox(
+                  width: double.infinity,
+                  child: GradientButton(
+                    onPressed: _next,
+                    icon: Icons.arrow_forward_rounded,
+                    label: 'Next question',
                   ),
                 )
               : Row(
@@ -380,8 +381,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
     Color border = scheme.outlineVariant;
     IconData? icon;
     if (answered && isCorrect) {
-      background = Colors.green.withValues(alpha: 0.18);
-      border = Colors.green;
+      background = AppColors.mint.withValues(alpha: 0.16);
+      border = AppColors.mint;
       icon = Icons.check_circle;
     } else if (answered && isPicked) {
       background = scheme.error.withValues(alpha: 0.16);
@@ -394,18 +395,29 @@ class _PracticeScreenState extends State<PracticeScreen> {
       child: Material(
         color: background ?? scheme.surfaceContainerHighest,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: border),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: _phase == _Phase.asking ? () => _submit(option) : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
+                LetterBadge(
+                  index: q.options.indexOf(option),
+                  color: icon == null ? null : border,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(option, style: const TextStyle(fontSize: 16)),
+                  child: Text(
+                    option,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
                 if (icon != null) Icon(icon, color: border, size: 20),
               ],
@@ -419,7 +431,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
   /// The "back of the card": verdict, answer, explanation, AI tutor.
   Widget _answerSide(Question q, ColorScheme scheme) {
     final skipped = _userAnswer.isEmpty;
-    final color = _verdict ? Colors.green : scheme.error;
+    final color = _verdict ? AppColors.mint : scheme.error;
     final hasExplanation = q.explanation.trim().isNotEmpty;
 
     return Column(

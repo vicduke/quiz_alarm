@@ -5,10 +5,13 @@ library;
 
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/question_repository.dart';
 import '../../models/models.dart';
 import '../../services/question_service.dart';
+import '../../services/theme_provider.dart';
+import '../../theme/app_theme.dart';
 import '../session_screen.dart';
 
 /// "1m 20s", "45s" or "2h 5m".
@@ -80,17 +83,21 @@ class _ReportsTabState extends State<ReportsTab> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 120),
         children: [
           Row(
             children: [
               _StatTile(
                 label: 'Questions answered',
+                icon: Icons.quiz_rounded,
+                color: AppColors.violet,
                 value: '${report.answered}',
               ),
               const SizedBox(width: 12),
               _StatTile(
                 label: 'Correct',
+                icon: Icons.check_circle_rounded,
+                color: AppColors.mint,
                 value: accuracy == null ? '-' : '$accuracy%',
               ),
             ],
@@ -100,6 +107,8 @@ class _ReportsTabState extends State<ReportsTab> {
             children: [
               _StatTile(
                 label: 'Average time to wake',
+                icon: Icons.timer_rounded,
+                color: AppColors.coral,
                 value: report.avgWakeTime == null
                     ? '-'
                     : formatDuration(report.avgWakeTime!),
@@ -107,6 +116,8 @@ class _ReportsTabState extends State<ReportsTab> {
               const SizedBox(width: 12),
               _StatTile(
                 label: 'Questions per alarm',
+                icon: Icons.bolt_rounded,
+                color: AppColors.amber,
                 value: report.avgWakeQuestions == null
                     ? '-'
                     : report.avgWakeQuestions!.toStringAsFixed(1),
@@ -176,30 +187,45 @@ class _ReportsTabState extends State<ReportsTab> {
 class _StatTile extends StatelessWidget {
   final String label;
   final String value;
-  const _StatTile({required this.label, required this.value});
+  final IconData icon;
+  final Color color;
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: color, size: 20),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(label, style: theme.textTheme.bodySmall),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: theme.textTheme.bodySmall),
+            ],
+          ),
         ),
       ),
     );
@@ -259,7 +285,7 @@ class _DayChart extends StatelessWidget {
                                     ),
                                     Container(
                                       height: height * d.correct / peak,
-                                      color: Colors.green,
+                                      color: AppColors.mint,
                                     ),
                                   ],
                                 ),
@@ -287,7 +313,7 @@ class _DayChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(width: 10, height: 10, color: Colors.green),
+              Container(width: 10, height: 10, color: AppColors.mint),
               const SizedBox(width: 4),
               Text('Correct', style: theme.textTheme.labelSmall),
               const SizedBox(width: 14),
@@ -370,13 +396,14 @@ class _SessionCard extends StatelessWidget {
     ];
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 5),
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         leading: Icon(icon),
         title: Text(s.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          '${DateFormat('EEE d MMM, HH:mm').format(s.startedAt)}\n'
+          '${DateFormat('EEE d MMM').format(s.startedAt)}, '
+          '${formatClock(s.startedAt, use24Hour: context.watch<ThemeProvider>().use24Hour)}\n'
           '${parts.join(' - ')}',
           style: theme.textTheme.bodySmall,
         ),
