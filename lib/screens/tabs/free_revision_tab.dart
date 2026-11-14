@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/bank_provider.dart';
 import '../../services/gemini_client.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/app_widgets.dart';
 import '../../widgets/topic_picker.dart';
 import '../practice_screen.dart';
 import '../settings_screen.dart';
@@ -81,14 +83,43 @@ class _FreeRevisionTabState extends State<FreeRevisionTab> {
     final canStart = _random || picked.isNotEmpty;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 120),
       children: [
-        Text('Flash-card revision', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 4),
-        Text(
-          'Answer each card, then see the right answer and why. Questions '
-          'you have not seen or got wrong come up first.',
-          style: theme.textTheme.bodyMedium,
+        HeroCard(
+          gradient: AppColors.night,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Flash cards',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Answer each card, then see the right answer and why. '
+                      'Questions you have not seen or got wrong come first.',
+                      style: TextStyle(color: Colors.white70, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.style_rounded, size: 32),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 20),
         SegmentedButton<bool>(
@@ -157,14 +188,10 @@ class _FreeRevisionTabState extends State<FreeRevisionTab> {
           ),
         ),
         const SizedBox(height: 20),
-        FilledButton.icon(
+        GradientButton(
           onPressed: canStart ? () => _start(bank) : null,
-          icon: const Icon(Icons.school),
-          label: Text(canStart ? 'Start revision' : 'Pick at least one topic'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
-            textStyle: const TextStyle(fontSize: 18),
-          ),
+          icon: Icons.play_arrow_rounded,
+          label: canStart ? 'Start revision' : 'Pick at least one topic',
         ),
       ],
     );

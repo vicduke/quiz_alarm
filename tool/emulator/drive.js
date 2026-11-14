@@ -72,10 +72,14 @@ const { chromium } = require('playwright');
   };
   const tapLabel = async (text) => {
     const box = await page.evaluate((want) => {
-      const hit = [...document.querySelectorAll('flt-semantics')].find((e) =>
-        e.children.length === 0 &&
-        (e.getAttribute('aria-label') || e.textContent || '').trim() === want &&
+      // Options are labelled "A\nText", so match the last line too.
+      const label = (e) => (e.getAttribute('aria-label') || e.textContent || '').trim();
+      const hits = [...document.querySelectorAll('flt-semantics')].filter((e) =>
+        (label(e) === want || label(e).endsWith('\n' + want)) &&
         e.getBoundingClientRect().width > 2);
+      const area = (e) => { const r = e.getBoundingClientRect(); return r.width * r.height; };
+      hits.sort((x, y) => area(x) - area(y));
+      const hit = hits[0];
       if (!hit) return null;
       const r = hit.getBoundingClientRect();
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };

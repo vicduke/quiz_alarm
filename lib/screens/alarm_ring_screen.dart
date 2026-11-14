@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +16,9 @@ import '../data/question_repository.dart';
 import '../models/models.dart';
 import '../services/alarm_provider.dart';
 import '../services/question_service.dart';
+import '../services/theme_provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 import '../widgets/shake_widget.dart';
 
 class AlarmRingScreen extends StatefulWidget {
@@ -33,7 +37,7 @@ class AlarmRingScreen extends StatefulWidget {
 enum _Phase { loading, asking, grading, correct, wrong, failed }
 
 class _AlarmRingScreenState extends State<AlarmRingScreen> {
-  static const Color _baseColor = Color(0xFF1A090D);
+  static const Color _baseColor = Color(0xFF140A1C);
   static const int _wrongForSnooze = 5;
 
   int _correctStreak = 0;
@@ -65,6 +69,9 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
         )
         .catchError((_) {});
     if (!widget.preview) {
+      // The alarm plays at full volume; swallow the volume keys so it
+      // cannot be turned down without answering.
+      HardwareKeyboard.instance.addHandler(_blockVolumeKeys);
       _session = QuestionRepository.startSession(
         'alarm',
         widget.alarm.label,
@@ -75,8 +82,16 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
     _loadNextQuestion();
   }
 
+  bool _blockVolumeKeys(KeyEvent event) {
+    final key = event.logicalKey;
+    return key == LogicalKeyboardKey.audioVolumeDown ||
+        key == LogicalKeyboardKey.audioVolumeUp ||
+        key == LogicalKeyboardKey.audioVolumeMute;
+  }
+
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_blockVolumeKeys);
     _saqController.dispose();
     _sfxPlayer.dispose();
     _shakeController.close();
@@ -190,12 +205,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
   Widget build(BuildContext context) {
     // This screen is always dark, whatever the app theme is.
     return Theme(
-      data: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurpleAccent,
-          brightness: Brightness.dark,
-        ),
-      ),
+      data: AppTheme.dark,
       child: PopScope(
         canPop: widget.preview,
         child: AnimatedContainer(
@@ -248,9 +258,43 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
 
   /// Streak progress, wrong-answer count and (in a test) the close button.
   Widget _header() {
+    final use24 = context.watch<ThemeProvider>().use24Hour;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.notifications_active_rounded,
+              color: Colors.white70,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                widget.preview
+                    ? '${widget.alarm.label} (test)'
+                    : widget.alarm.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              formatClock(DateTime.now(), use24Hour: use24),
+              style: const TextStyle(
+                fontFamily: AppTheme.display,
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             const Icon(Icons.bolt, color: Colors.amber, size: 20),
@@ -285,7 +329,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
           child: LinearProgressIndicator(
             value: _needed == 0 ? 0 : _correctStreak / _needed,
             minHeight: 8,
-            color: Colors.amber,
+            color: AppColors.amber,
             backgroundColor: Colors.white12,
           ),
         ),
@@ -476,13 +520,11 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          FilledButton.icon(
+          GradientButton(
             onPressed: _loadNextQuestion,
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text('Next question'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-            ),
+            icon: Icons.arrow_forward_rounded,
+            label: 'Next question',
+            height: 52,
           ),
         ],
       ),
@@ -504,36 +546,57 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
       Text(
         q.questionText,
         style: const TextStyle(
-          fontSize: 21,
-          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.display,
+          fontSize: 24,
+          height: 1.2,
+          fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
       ),
       const SizedBox(height: 20),
       if (q.type == QuestionType.mcq)
-        ...q.options.map(
-          (opt) => Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: FilledButton.tonal(
-              onPressed: () => _submitAnswer(opt),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 13,
+        for (final (i, opt) in q.options.indexed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 9),
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.07),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _submitAnswer(opt),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      LetterBadge(index: i, color: AppColors.amber),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          opt,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              child: Text(opt, textAlign: TextAlign.center),
             ),
-          ),
-        )
+          )
       else ...[
         TextField(
           controller: _saqController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Type answer...',
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(hintText: 'Type answer...'),
           onSubmitted: _submitAnswer,
         ),
         const SizedBox(height: 12),

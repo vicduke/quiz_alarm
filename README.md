@@ -30,6 +30,9 @@ lib/
   services/gemini_client.dart     Gemini REST calls, API key storage
   services/question_service.dart  marking, AI tutor, AI question generation
   services/bank_provider.dart     units/topics/progress for the screens
+  services/theme_provider.dart    dark/light theme and 12/24 hour clock
+  theme/app_theme.dart            colours, fonts and component styles (the look lives here)
+  widgets/app_widgets.dart        hero card, gradient button, pills, progress ring
   screens/ ...                    tabs, practice (flash cards), topic, ring, edit, settings
 assets/question_banks/*.json      the bundled question banks
 tool/emulator/                    browser "mini emulator"

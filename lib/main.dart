@@ -9,6 +9,7 @@ import 'services/alarm_backend.dart';
 import 'services/alarm_provider.dart';
 import 'services/bank_provider.dart';
 import 'services/theme_provider.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,26 +37,19 @@ class QuizAlarmApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final settings = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       title: 'BrainWake Alarm',
       debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.themeMode,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          secondary: Colors.amber.shade800,
-        ),
-      ),
-      darkTheme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurpleAccent,
-          brightness: Brightness.dark,
-          secondary: Colors.amberAccent,
-          surface: const Color(0xFF121212),
-        ),
+      themeMode: settings.themeMode,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      // Makes every standard time widget follow the 12/24 hour setting.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(alwaysUse24HourFormat: settings.use24Hour),
+        child: child!,
       ),
       home: const HomeScreen(),
     );

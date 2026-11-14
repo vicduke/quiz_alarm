@@ -5,9 +5,11 @@ library;
 
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
 import '../data/question_repository.dart';
 import '../models/models.dart';
+import '../services/theme_provider.dart';
 import 'tabs/reports_tab.dart' show formatDuration;
 
 class SessionScreen extends StatefulWidget {
@@ -49,7 +51,8 @@ class _SessionScreenState extends State<SessionScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  '$kind - ${DateFormat('EEEE d MMMM, HH:mm').format(s.startedAt)}',
+                  '$kind - ${DateFormat('EEEE d MMMM').format(s.startedAt)}, '
+                  '${formatClock(s.startedAt, use24Hour: context.watch<ThemeProvider>().use24Hour)}',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),

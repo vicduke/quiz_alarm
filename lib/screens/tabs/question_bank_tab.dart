@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../data/question_repository.dart';
 import '../../models/models.dart';
 import '../../services/bank_provider.dart';
+import '../../widgets/app_widgets.dart';
 import '../practice_screen.dart';
 import '../topic_screen.dart';
 
@@ -109,11 +110,11 @@ class QuestionBankTab extends StatelessWidget {
     return Stack(
       children: [
         ListView(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 180),
           children: [
             for (final unit in bank.units) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+                padding: const EdgeInsets.fromLTRB(4, 10, 0, 12),
                 child: Row(
                   children: [
                     Expanded(
@@ -153,7 +154,7 @@ class QuestionBankTab extends StatelessWidget {
         ),
         Positioned(
           right: 16,
-          bottom: 16,
+          bottom: 104,
           child: FloatingActionButton.extended(
             heroTag: 'add-topic',
             onPressed: () => _addTopic(context, bank),
@@ -174,44 +175,45 @@ class _TopicCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => TopicScreen(topic: topic)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(topic.name, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      stats.total == 0
-                          ? 'No questions yet'
-                          : '${stats.total} questions - ${stats.seen} answered - '
-                                '${stats.mastered} correct',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: stats.total == 0
-                          ? 0
-                          : stats.mastered / stats.total,
-                      borderRadius: BorderRadius.circular(4),
-                      minHeight: 5,
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => TopicScreen(topic: topic)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
+            child: Row(
+              children: [
+                ProgressRing(
+                  value: stats.total == 0 ? 0 : stats.mastered / stats.total,
                 ),
-              ),
-              const Icon(Icons.chevron_right),
-            ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(topic.name, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 3),
+                      Text(
+                        stats.total == 0
+                            ? 'No questions yet'
+                            : '${stats.total} questions - ${stats.seen} answered - '
+                                  '${stats.mastered} correct',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
           ),
         ),
       ),

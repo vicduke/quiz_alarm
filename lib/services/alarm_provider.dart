@@ -173,7 +173,8 @@ class AlarmProvider extends ChangeNotifier {
       dateTime: when,
       audioPath: alarm.audioPath,
       vibrate: alarm.vibrate,
-      volume: alarm.volume,
+      // Always the loudest the phone can go, whatever its volume is set to.
+      volume: 1.0,
       fadeDuration: alarm.fadeDuration,
       title: title ?? name,
       body:
