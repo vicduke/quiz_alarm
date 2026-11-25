@@ -18,9 +18,9 @@ import com.gdelataillade.alarm.services.AlarmStorage
  * Many phones close an app the moment it is swiped out of recent apps
  * (or "cleaned" on lock), and an app can crash. Either way the ringing
  * stops and nothing restarts it. This is a second, independent wake-up:
- * for every alarm the app sets, the guard is scheduled six seconds
- * after it (Android allows nothing much shorter), and again every six
- * seconds while the alarm is unanswered. Each time it looks at the alarm:
+ * for every alarm the app sets, the guard is scheduled five seconds
+ * after it (the shortest Android allows), and again every five seconds
+ * while the alarm is unanswered. Each time it looks at the alarm:
  *
  *  - no longer stored (answered, snoozed, cancelled): nothing to do;
  *  - still ringing: all is well, look again shortly;
@@ -37,7 +37,21 @@ object RingGuard {
     private const val STORE = "ring_guard"
 
     /** How soon after the alarm, and then how often, the guard looks. */
-    const val CHECK_EVERY_MS = 6_000L
+    const val CHECK_EVERY_MS = 5_000L
+
+    /**
+     * How long this process has been running, in milliseconds. A process
+     * only seconds old was started by the guard's own wake-up, which means
+     * the app had been closed. (Replaced in the off-phone checks.)
+     */
+    @JvmField
+    var processAgeMs: () -> Long = {
+        if (Build.VERSION.SDK_INT >= 24) {
+            android.os.SystemClock.elapsedRealtime() - android.os.Process.getStartElapsedRealtime()
+        } else {
+            Long.MAX_VALUE
+        }
+    }
 
     /** Unanswered for this long: stop bringing it back. */
     private const val GIVE_UP_AFTER_MS = 30 * 60_000L
@@ -132,14 +146,28 @@ object RingGuard {
         } catch (e: Throwable) {
             false
         }
-        if (!ringing && !confirmed) {
+        // The app had been closed (this process is seconds old): nobody can
+        // be answering it right now, so there is nothing to look at twice.
+        val wasClosed = try { processAgeMs() < 4_000L } catch (e: Throwable) { false }
+        if (!ringing && !confirmed && !wasClosed) {
             arm(context, id, now + CHECK_EVERY_MS)
             return "confirm"
         }
         if (!ringing) {
-            // Due and unanswered, yet silent, twice in a row: ring it again.
+            // Due and unanswered, yet silent: ring it again, at full volume
+            // at once (a fade-in starting over would sound like it stopped).
             try {
-                AlarmScheduler.schedule(context, saved)
+                val loud = try {
+                    saved.copy(
+                        volumeSettings = saved.volumeSettings.copy(
+                            fadeDuration = null, fadeSteps = emptyList()
+                        )
+                    )
+                } catch (e: Throwable) {
+                    saved
+                }
+                AlarmScheduler.schedule(context, loud)
+                showQuiz(context)
                 store.edit().putInt("revived", store.getInt("revived", 0) + 1)
                     .putLong("revived_at", now).apply()
             } catch (e: Throwable) {
@@ -148,6 +176,22 @@ object RingGuard {
         }
         arm(context, id, now + CHECK_EVERY_MS)
         return if (ringing) "ringing" else "revived"
+    }
+
+    /**
+     * Brings the app's screen back so the questions show again. Android
+     * only lets an app do this from the background when it may "display
+     * over other apps"; without that the alarm's own notification (and,
+     * on a locked phone, its full-screen alarm) is the way back in.
+     */
+    private fun showQuiz(context: Context) {
+        try {
+            context.startActivity(
+                Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (e: Throwable) {
+        }
     }
 
     /** After a restart or an update: put every guard back. */
@@ -220,7 +264,7 @@ class RingGuardReceiver : BroadcastReceiver() {
                     RingGuard.check(app, id, confirmed = true)
                 } catch (e: Throwable) {
                 }
-            }, 1_500L)
+            }, 1_200L)
         }
         main.postDelayed({
             try {

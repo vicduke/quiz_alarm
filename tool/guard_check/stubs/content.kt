@@ -15,10 +15,13 @@ class MemPrefs : SharedPreferences, SharedPreferences.Editor { val m = HashMap<S
 open class Context { companion object { const val ALARM_SERVICE = "alarm"; const val MODE_PRIVATE = 0; val prefs = MemPrefs(); val alarms = android.app.AlarmManager() }
   open fun getSystemService(name: String): Any = alarms
   open fun getSharedPreferences(name: String, mode: Int): SharedPreferences = prefs
-  open val applicationContext: Context get() = this }
+  open val applicationContext: Context get() = this
+  open fun startActivity(i: Intent) { started++ }
+  var started = 0 }
 class Intent() { constructor(c: Context, cls: Class<*>) : this()
-  companion object { const val ACTION_BOOT_COMPLETED = "b"; const val ACTION_MY_PACKAGE_REPLACED = "r" }
+  companion object { const val ACTION_BOOT_COMPLETED = "b"; const val ACTION_MY_PACKAGE_REPLACED = "r"; const val FLAG_ACTIVITY_NEW_TASK = 1 }
   var action: String? = null
+  fun addFlags(f: Int): Intent = this
   fun putExtra(k: String, v: Int): Intent = this
   fun getIntExtra(k: String, d: Int): Int = d }
 abstract class BroadcastReceiver { class PendingResult { fun finish() {} }

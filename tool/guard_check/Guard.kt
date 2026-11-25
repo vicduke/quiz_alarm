@@ -10,6 +10,8 @@ import java.util.Date
 fun expect(what: String, ok: Boolean) { println((if (ok) "ok   " else "FAIL ") + what); if (!ok) System.exit(1) }
 fun main() {
     val c = Context(); val now = System.currentTimeMillis()
+    // The app is running (its process is old), unless a case says otherwise.
+    RingGuard.processAgeMs = { 600_000L }
     expect("an alarm nobody guards is left alone", RingGuard.check(c, 7) == "unknown")
 
     // Set for 5 seconds ago: the guard is armed 20 s after the alarm.
@@ -24,6 +26,8 @@ fun main() {
     expect("silent on the first look: not rung yet, asks for a second look", RingGuard.check(c, 7) == "confirm" && AlarmScheduler.scheduled.isEmpty())
     expect("closed while ringing: rung again on the second look", RingGuard.check(c, 7, confirmed = true) == "revived" && AlarmScheduler.scheduled == listOf(7))
     expect("and it keeps looking", AlarmManager.armed[7]!! > now)
+    expect("it comes back at full volume at once, with no fade-in", AlarmScheduler.last!!.volumeSettings.fadeDuration == null && AlarmScheduler.last!!.volumeSettings.fadeSteps.isEmpty() && AlarmScheduler.last!!.volumeSettings.volume == 1.0)
+    expect("and the quiz is brought back to the screen", c.started == 1)
     expect("the revival is counted", (RingGuard.revivals(c)["count"] as Int) == 1)
 
     AlarmService.ringing = listOf(7)
@@ -37,6 +41,14 @@ fun main() {
     RingGuard.watch(c, 7, now - 5_000); AlarmStorage.saved.clear()
     expect("answered: the guard ends", RingGuard.check(c, 7) == "over" && !AlarmManager.armed.containsKey(7))
     expect("and is forgotten", RingGuard.check(c, 7) == "unknown")
+
+    // The phone closed the app: the guard's own wake-up started a new process.
+    AlarmStorage.saved.clear(); AlarmScheduler.scheduled.clear()
+    RingGuard.watch(c, 12, now - 5_000); AlarmStorage.saved.add(AlarmSettings(12, Date(now - 5_000)))
+    AlarmService.ringing = listOf(); RingGuard.processAgeMs = { 900L }
+    expect("app was closed: rung again on the FIRST look, no waiting", RingGuard.check(c, 12) == "revived" && AlarmScheduler.scheduled == listOf(12))
+    RingGuard.processAgeMs = { 600_000L }
+    AlarmStorage.saved.clear(); AlarmScheduler.scheduled.clear(); AlarmScheduler.scheduled.add(7)   // as it was before this case
 
     // Edited to a later time under the same number.
     RingGuard.watch(c, 8, now - 1_000)
