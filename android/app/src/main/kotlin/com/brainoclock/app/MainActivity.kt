@@ -109,8 +109,14 @@ class MainActivity : FlutterActivity() {
         getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Before the Flutter screen exists: changing how the window shows
+        // over the lock screen while its first picture is being drawn is
+        // one way to upset the drawing thread.
+        try {
+            showIfLocked()
+        } catch (e: Exception) {
+        }
         super.onCreate(savedInstanceState)
-        showIfLocked()
     }
 
     override fun onNewIntent(intent: Intent) {
