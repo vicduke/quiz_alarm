@@ -10,7 +10,7 @@ class ServerConfig {
       'sb_publishable_bE2OwJPR9O9mhzRi-HVPLw_lh7G7-LB';
 
   /// Sent with problem reports. Keep equal to "version" in pubspec.yaml.
-  static const String appVersion = '1.0.6+7';
+  static const String appVersion = '1.0.7+8';
 
   /// The AI server (writes questions, tutor, marking of typed answers).
   static const String apiUrl =

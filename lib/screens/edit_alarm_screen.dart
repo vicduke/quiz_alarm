@@ -114,9 +114,9 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   void initState() {
     super.initState();
     final a = widget.existingAlarm;
-    // A new alarm starts at a usual waking time, not at the current
-    // minute (which would be a full day away).
-    _selectedTime = a?.time ?? const TimeOfDay(hour: 7, minute: 0);
+    // A new alarm starts at the time it is now, so the wheels only need
+    // turning from here to the time wanted.
+    _selectedTime = a?.time ?? TimeOfDay.now();
     _labelCtrl = TextEditingController(text: a?.label ?? 'Quiz Alarm');
     _topics = List.of(a?.topics ?? const []);
     _topicsChosen = a != null;
